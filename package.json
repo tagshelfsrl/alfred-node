@@ -2,7 +2,10 @@
   "name": "@tagshelf/alfred",
   "version": "1.0.0",
   "description": "TypeScript/Node library for seamless integration with Alfred's Intelligent Process Automation platform.",
-  "main": "index.ts",
+  "main": "lib/index.js",
+  "files": [
+    "lib/"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "jest"
@@ -20,6 +23,7 @@
     "jest": "^29.7.0",
     "prettier": "^3.2.5",
     "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {
