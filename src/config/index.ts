@@ -14,14 +14,14 @@ export class Configuration {
   static v1(env: Environment): ClientConfiguration {
     if (env === "staging") {
       return {
-        baseURL: "https://staging.tagshelf.com/api",
+        baseURL: "https://staging.tagshelf.com",
         version: 1,
         environment: "staging",
       };
     }
 
     return {
-      baseURL: "hthttps://app.tagshelf.com/api",
+      baseURL: "hthttps://app.tagshelf.com",
       version: 1,
       environment: "production",
     };
