@@ -1,11 +1,14 @@
 import crypto from "crypto";
 import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
+
+import Account from "./account";
 import { Env } from "../utils/env";
 import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
 import { ConfigurationError, HTTPError } from "../errors";
 import { AuthConfiguration, AuthMethod } from "../config/types";
 
+// eslint-disable-next-line
 const moduleInfo = require("../../package.json");
 
 interface TokenResponse {
@@ -16,18 +19,21 @@ interface TokenResponse {
 }
 
 export class AlfredClient {
-  private http: AxiosInstance;
+  _http: AxiosInstance;
   private auth: AuthConfiguration;
   private authMethod!: AuthMethod;
   private accessToken?: string;
   private configuration: ClientConfiguration;
+
+  // Domains
+  private _account?: Account;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
     this.auth = auth;
     this.configuration = configuration;
 
     // Create default axios instance
-    this.http = axios.create({
+    this._http = axios.create({
       baseURL: this.configuration.baseURL,
       headers: {
         "Content-Type": "application/json",
@@ -35,7 +41,7 @@ export class AlfredClient {
     });
 
     // Setup response interceptor
-    this.http.interceptors.response.use(
+    this._http.interceptors.response.use(
       (response) => {
         response.data = toCamelCase(response.data);
         return response;
@@ -60,7 +66,7 @@ export class AlfredClient {
             this.accessToken = "";
 
             // Retry the request
-            return this.http(originalReq);
+            return this._http(originalReq);
           }
 
           // Otherwise, raise an HTTP error
@@ -105,7 +111,7 @@ export class AlfredClient {
     if (!key) key = Env.castStringValue("ALFRED_API_KEY");
     if (!key) return;
 
-    this.http.defaults.headers.common["X-TagshelfAPI-Key"] = key;
+    this._http.defaults.headers.common["X-TagshelfAPI-Key"] = key;
     this.authMethod = AuthMethod.API_KEY;
   }
 
@@ -116,7 +122,7 @@ export class AlfredClient {
    * @param {string} password - A string that represents the user's password for authentication.
    */
   private authWithOAuth(username: string, password: string) {
-    this.http.interceptors.request.use(async (config) => {
+    this._http.interceptors.request.use(async (config) => {
       if (!this.accessToken && config.url !== "/token") {
         // Get access token
         const tokenResp = await this.getToken(username, password);
@@ -137,7 +143,7 @@ export class AlfredClient {
    * @param {string} secretKey - A secret key associated with your user.
    */
   private authWithHmac(apiKey: string, secretKey: string) {
-    this.http.interceptors.request.use((config) => {
+    this._http.interceptors.request.use((config) => {
       const nonce = crypto.randomUUID();
       const requestURI = encodeURIComponent(
         ((config.baseURL as string) + config.url) as string
@@ -199,7 +205,7 @@ export class AlfredClient {
       const payload = { grant_type: "password", username, password };
       const params = new URLSearchParams(payload);
 
-      const resp = await this.http.post<TokenResponse>("/token", params);
+      const resp = await this._http.post<TokenResponse>("/token", params);
       return resp.data;
     } catch (err) {
       // Raise credential errors configuration errors
@@ -217,5 +223,10 @@ export class AlfredClient {
    */
   version() {
     return moduleInfo.version;
+  }
+
+  get account(): Account {
+    // eslint-disable-next-line
+    return this._account ?? (this._account = new (require("./account"))(this));
   }
 }
