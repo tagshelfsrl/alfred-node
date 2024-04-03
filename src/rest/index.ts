@@ -1,9 +1,10 @@
-import axios, { AxiosInstance, isAxiosError } from "axios";
+import crypto from "crypto";
+import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
 import { Env } from "../utils/env";
-import { ConfigurationError } from "../errors";
 import { ClientConfiguration } from "../config";
-import { AuthConfiguration, AuthMethod } from "../config/types";
 import { toCamelCase } from "../utils/convert-case";
+import { ConfigurationError, HTTPError } from "../errors";
+import { AuthConfiguration, AuthMethod } from "../config/types";
 
 const moduleInfo = require("../../package.json");
 
@@ -16,19 +17,16 @@ interface TokenResponse {
 
 export class AlfredClient {
   private http: AxiosInstance;
-  private authMethod!: AuthMethod;
   private auth: AuthConfiguration;
+  private authMethod!: AuthMethod;
+  private accessToken?: string;
   private configuration: ClientConfiguration;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
-    // if (auth.apiKey) this.apiKey = auth.apiKey;
-    // else this.apiKey = Env.castStringValue("ALFRED_API_KEY");
-
-    // if (!apiKey)
-    //   throw new ConfigurationError("Cannot initialize client without API key.");
     this.auth = auth;
     this.configuration = configuration;
 
+    // Create default axios instance
     this.http = axios.create({
       baseURL: this.configuration.baseURL,
       headers: {
@@ -36,18 +34,62 @@ export class AlfredClient {
       },
     });
 
-    // Optionally, set a response interceptor to automatically convert responses to
+    // Setup response interceptor
     this.http.interceptors.response.use(
       (response) => {
         response.data = toCamelCase(response.data);
         return response;
       },
       (err) => {
-        if (isAxiosError(err)) {
-          err.status;
+        if (isAxiosError(err) && err.response) {
+          // Store original request
+          const originalReq = err.config as AxiosRequestConfig & {
+            _retry?: boolean;
+          };
+
+          // When using OAuth, retry the request using a new token to handle expirations
+          if (
+            !originalReq._retry &&
+            err.response.status === 401 &&
+            this.authMethod === AuthMethod.OAUTH
+          ) {
+            // Mark request as retried
+            originalReq._retry = true;
+
+            // Clean expired access token
+            this.accessToken = "";
+
+            // Retry the request
+            return this.http(originalReq);
+          }
+
+          // Otherwise, raise an HTTP error
+          throw new HTTPError(
+            err.message,
+            err.response.status,
+            err.response.data,
+            err.config?.url as string
+          );
         }
+        throw err;
       }
     );
+
+    // Check API key authorization
+    this.authWithApiKey(this.auth.apiKey);
+
+    // Check OAuth authorization
+    if (!this.authMethod && this.auth.oauth)
+      this.authWithOAuth(this.auth.oauth.username, this.auth.oauth.password);
+
+    // Check HMAC authorization
+    if (!this.authMethod && this.auth.hmac)
+      this.authWithHmac(this.auth.hmac.apiKey, this.auth.hmac.secretKey);
+
+    if (!this.authMethod)
+      throw new ConfigurationError(
+        "You must provide at least one valid authorization property."
+      );
   }
 
   /**
@@ -67,42 +109,106 @@ export class AlfredClient {
     this.authMethod = AuthMethod.API_KEY;
   }
 
-  private async authWithOAuth(username: string, password: string) {
-    try {
-      // Get access token
-      const tokenResp = await this.getToken(username, password);
+  /**
+   * Handles authentication using OAuth by obtaining an access token and
+   * setting it in the HTTP headers.
+   * @param {string} username - A string that represents the username used for authentication.
+   * @param {string} password - A string that represents the user's password for authentication.
+   */
+  private authWithOAuth(username: string, password: string) {
+    this.http.interceptors.request.use(async (config) => {
+      if (!this.accessToken && config.url !== "/token") {
+        // Get access token
+        const tokenResp = await this.getToken(username, password);
+        this.accessToken = tokenResp.accessToken;
+      }
 
-      // Set access token
-      this.http.defaults.headers.common["Authorization"] =
-        `Bearer ${tokenResp.accessToken}`;
+      config.headers.Authorization = `Bearer ${this.accessToken}`;
+      return config;
+    });
 
-      // Set auth method
-      this.authMethod = AuthMethod.OAUTH;
-    } catch (err) {
-      if (isAxiosError(err) && err.status === 400)
-        throw new ConfigurationError("Invalid credentials for OAuth provided.");
-    }
+    // Set auth method
+    this.authMethod = AuthMethod.OAUTH;
   }
 
+  /**
+   * Generates a HMAC-based authentication header for API requests using provided API key and secret key.
+   * @param {string} apiKey - A unique identifier associated with your user.
+   * @param {string} secretKey - A secret key associated with your user.
+   */
+  private authWithHmac(apiKey: string, secretKey: string) {
+    this.http.interceptors.request.use((config) => {
+      const nonce = crypto.randomUUID();
+      const requestURI = encodeURIComponent(
+        ((config.baseURL as string) + config.url) as string
+      ).toLowerCase();
+      const requestMethod = (config.method as string).toUpperCase();
+      const requestTimestamp = Math.floor(new Date().getTime() / 1000);
+      let requestContent = "";
+
+      if (config.data)
+        requestContent = crypto
+          .createHash("md5")
+          .update(JSON.stringify(config.data))
+          .digest("base64");
+
+      // Prepare request signature
+      const signatureRawData =
+        secretKey +
+        requestMethod +
+        requestURI +
+        requestTimestamp +
+        nonce +
+        requestContent;
+
+      const signature = Buffer.from(signatureRawData);
+
+      const secretByteArray = Buffer.from(apiKey, "base64");
+
+      const signatureBase64 = crypto
+        .createHmac("sha256", secretByteArray)
+        .update(signature)
+        .digest("base64");
+
+      const hmacKey =
+        "amx " +
+        secretKey +
+        ":" +
+        signatureBase64 +
+        ":" +
+        nonce +
+        ":" +
+        requestTimestamp;
+
+      config.headers.Authorization = hmacKey;
+
+      return config;
+    });
+
+    // Set auth method
+    this.authMethod = AuthMethod.HMAC;
+  }
+
+  /**
+   * Get access token.
+   * @param {string} username - A string that represents the username used for authentication.
+   * @param {string} password - A string that represents the user's password for authentication.
+   */
   private async getToken(username: string, password: string) {
-    const payload = { grant_type: "password", username, password };
-    const resp = await this.http.post<TokenResponse>("/token", payload);
-    return resp.data;
-  }
+    try {
+      const payload = { grant_type: "password", username, password };
+      const params = new URLSearchParams(payload);
 
-  async init() {
-    // Check API key authorization
-    this.authWithApiKey(this.auth.apiKey);
+      const resp = await this.http.post<TokenResponse>("/token", params);
+      return resp.data;
+    } catch (err) {
+      // Raise credential errors configuration errors
+      if (err instanceof HTTPError && err.status === 400)
+        throw new ConfigurationError(
+          "Provided auth configuration is not valid."
+        );
 
-    // Check OAuth authorization
-    if (!this.authMethod && this.auth.oauth)
-      await this.authWithOAuth(
-        this.auth.oauth.username,
-        this.auth.oauth.password
-      );
-
-    // Check HMAC authorization
-    if (!this.authMethod && this.auth.hmac) {
+      throw err;
     }
   }
 
