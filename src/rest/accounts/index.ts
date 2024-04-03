@@ -1,6 +1,6 @@
 import { AlfredClient } from "..";
 
-class Account {
+class Accounts {
   constructor(private client: AlfredClient) {}
 
   /**
@@ -12,4 +12,4 @@ class Account {
   }
 }
 
-export = Account;
+export = Accounts;
