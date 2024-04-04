@@ -7,6 +7,7 @@ import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
 import { ConfigurationError, HTTPError } from "../errors";
 import { AuthConfiguration, AuthMethod } from "../config/types";
+import DataPoints from "./datapoints";
 
 // eslint-disable-next-line
 const moduleInfo = require("../../package.json");
@@ -27,6 +28,7 @@ export class AlfredClient {
 
   // Domains
   private _accounts?: Accounts;
+  private _dataPoints?: DataPoints;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
     this.auth = auth;
@@ -104,7 +106,8 @@ export class AlfredClient {
    * @param {string} [apiKey] - TA string that represents an API key used for
    * authentication. If no value is provided, the function will attempt to retrieve the API key from
    * the environment variable
-   * @returns A boolean indicating whether or not it was able to setup the authorization.
+   * @returns A boolean indicating whether it was able to set up the authorization.
+
    */
   private authWithApiKey(apiKey?: string) {
     let key = apiKey;
@@ -229,6 +232,13 @@ export class AlfredClient {
     return (
       // eslint-disable-next-line
       this._accounts ?? (this._accounts = new (require("./accounts"))(this))
+    );
+  }
+
+  get dataPoints(): DataPoints {
+    return (
+      // eslint-disable-next-line
+      this._dataPoints ?? (this._dataPoints = new (require("./datapoints"))(this))
     );
   }
 }
