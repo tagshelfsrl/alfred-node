@@ -1,7 +1,10 @@
-name: Lint PR
+name: On PR
+
 on:
-  pull_request_target:
-    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   validate:
@@ -20,8 +23,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  lint:
-    name: Lint check
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout alfred-node
@@ -39,3 +42,6 @@ jobs:
 
       - name: Run lint
         run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test
