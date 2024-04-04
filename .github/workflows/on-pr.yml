@@ -45,3 +45,10 @@ jobs:
 
       - name: Run unit tests
         run: npm run test
+
+  release:
+    name: Release
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    uses: tagshelfsrl/github-actions/.github/workflows/semver.yml@v1.12.0
+    secrets:
+      token: ${{ secrets.PAT_TOKEN }}
