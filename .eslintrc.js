@@ -4,8 +4,13 @@ module.exports = {
     ecmaVersion: 2020,
     sourceType: "module",
   },
-  extends: ["plugin:@typescript-eslint/recommended", "prettier"],
+  extends: [
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended",
+  ],
+  plugins: ["prettier"],
   rules: {
+    "prettier/prettier": "error",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/ban-types": "off",
