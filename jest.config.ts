@@ -10,6 +10,10 @@ const config: Config = {
   },
   testTimeout: 120000,
   reporters: ["jest-ci-spec-reporter"],
+  coveragePathIgnorePatterns: [
+    "<rootDir>/src/errors.ts",
+    "<rootDir>/src/rest/index.ts",
+  ],
 };
 
 export default config;

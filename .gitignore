@@ -131,3 +131,6 @@ dist
 
 # Lib output
 /lib/
+
+# VS code
+.vscode
