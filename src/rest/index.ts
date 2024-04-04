@@ -241,5 +241,4 @@ export class AlfredClient {
       this._dataPoints ?? (this._dataPoints = new (require("./datapoints"))(this))
     );
   }
-
 }

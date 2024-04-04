@@ -1,2 +1,1 @@
-
-export * from './datapoint'
+export * from "./datapoint";

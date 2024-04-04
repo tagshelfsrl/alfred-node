@@ -2,8 +2,7 @@ import { AlfredClient } from "..";
 import { DataPointResult } from "../../interfaces";
 
 class DataPoints {
-  constructor(private client: AlfredClient) {
-  }
+  constructor(private client: AlfredClient) {}
 
   /**
    * Fetches datapoint values for a specific file by its ID.
@@ -14,8 +13,10 @@ class DataPoints {
    * @throws {HTTPError} Will throw an error if the HTTP request fails.
    */
   async getValues(fileId: string): Promise<DataPointResult[]> {
-    const response = await this.client._http.get<DataPointResult[]>(`api/values/file/${ fileId }`);
-    return response.data
+    const response = await this.client._http.get<DataPointResult[]>(
+      `api/values/file/${fileId}`
+    );
+    return response.data;
   }
 }
 

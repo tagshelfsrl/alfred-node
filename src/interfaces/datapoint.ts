@@ -1,4 +1,3 @@
-
 export interface DataPointResult {
   id: string;
   value: string;
