@@ -2,6 +2,7 @@ import crypto from "crypto";
 import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
 
 import Accounts from "./accounts";
+import Sessions from "./sessions";
 import { Env } from "../utils/env";
 import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
@@ -27,6 +28,7 @@ export class AlfredClient {
 
   // Domains
   private _accounts?: Accounts;
+  private _sessions?: Sessions;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
     this.auth = auth;
@@ -229,6 +231,13 @@ export class AlfredClient {
     return (
       // eslint-disable-next-line
       this._accounts ?? (this._accounts = new (require("./accounts"))(this))
+    );
+  }
+
+  get sessions(): Sessions {
+    return (
+      // eslint-disable-next-line
+      this._sessions ?? (this._sessions = new (require("./sessions"))(this))
     );
   }
 }
