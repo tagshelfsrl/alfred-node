@@ -107,6 +107,7 @@ export class AlfredClient {
    * authentication. If no value is provided, the function will attempt to retrieve the API key from
    * the environment variable
    * @returns A boolean indicating whether it was able to set up the authorization.
+
    */
   private authWithApiKey(apiKey?: string) {
     let key = apiKey;
@@ -240,4 +241,5 @@ export class AlfredClient {
       this._dataPoints ?? (this._dataPoints = new (require("./datapoints"))(this))
     );
   }
+
 }
