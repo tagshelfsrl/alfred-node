@@ -14,10 +14,9 @@ describe("rest: sessions", () => {
         sessionId: "123",
       },
     });
-    console.log(client._http.post);
 
     const sessions = new Sessions(client);
-    const resp = await sessions.createDeferredSession();
+    const resp = await sessions.create();
 
     expect(resp.sessionId).toBe("123");
     expect(client._http.post).toHaveBeenCalledWith("/api/deferred/create");
@@ -40,7 +39,7 @@ describe("rest: sessions", () => {
     });
 
     const sessions = new Sessions(client);
-    const resp = await sessions.getDeferredSession(sessionId);
+    const resp = await sessions.get(sessionId);
 
     expect(resp.id).toBe(sessionId);
     expect(resp.creationDate).toBe("2021-01-01T00:00:00Z");
