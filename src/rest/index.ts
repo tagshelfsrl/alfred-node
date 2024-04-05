@@ -2,12 +2,13 @@ import crypto from "crypto";
 import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
 
 import Accounts from "./accounts";
+import Sessions from "./sessions";
+import DataPoints from "./datapoints";
 import { Env } from "../utils/env";
 import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
 import { ConfigurationError, HTTPError } from "../errors";
 import { AuthConfiguration, AuthMethod } from "../config/types";
-import DataPoints from "./datapoints";
 
 // eslint-disable-next-line
 const moduleInfo = require("../../package.json");
@@ -28,6 +29,7 @@ export class AlfredClient {
 
   // Domains
   private _accounts?: Accounts;
+  private _sessions?: Sessions;
   private _dataPoints?: DataPoints;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
@@ -235,10 +237,17 @@ export class AlfredClient {
     );
   }
 
-  get dataPoints(): DataPoints {
+  get sessions(): Sessions {
     return (
       // eslint-disable-next-line
-      this._dataPoints ?? (this._dataPoints = new (require("./datapoints"))(this))
+      this._sessions ?? (this._sessions = new (require("./sessions"))(this))
+    );
+  }
+  get dataPoints(): DataPoints {
+    return (
+      this._dataPoints ??
+      // eslint-disable-next-line
+      (this._dataPoints = new (require("./datapoints"))(this))
     );
   }
 }
