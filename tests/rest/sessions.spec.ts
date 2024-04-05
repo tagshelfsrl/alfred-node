@@ -46,6 +46,8 @@ describe("rest: sessions", () => {
     expect(resp.updateDate).toBe("2021-01-01T00:00:00Z");
     expect(resp.status).toBe("open");
     expect(resp.userName).toBe("test");
-    expect(client._http.get).toHaveBeenCalledWith(`/api/deferred/${sessionId}`);
+    expect(client._http.get).toHaveBeenCalledWith(
+      `/api/deferred/detail/${sessionId}`
+    );
   });
 });
