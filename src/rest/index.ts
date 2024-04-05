@@ -8,6 +8,7 @@ import { toCamelCase } from "../utils/convert-case";
 import { ConfigurationError, HTTPError } from "../errors";
 import { AuthConfiguration, AuthMethod } from "../config/types";
 import DataPoints from "./datapoints";
+import Jobs from "./jobs";
 
 // eslint-disable-next-line
 const moduleInfo = require("../../package.json");
@@ -29,6 +30,7 @@ export class AlfredClient {
   // Domains
   private _accounts?: Accounts;
   private _dataPoints?: DataPoints;
+  private _jobs?: Jobs;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
     this.auth = auth;
@@ -237,8 +239,17 @@ export class AlfredClient {
 
   get dataPoints(): DataPoints {
     return (
+      this._dataPoints ??
       // eslint-disable-next-line
-      this._dataPoints ?? (this._dataPoints = new (require("./datapoints"))(this))
+      (this._dataPoints = new (require("./datapoints"))(this))
+    );
+  }
+
+  get jobs(): Jobs {
+    return (
+      this._jobs ??
+      // eslint-disable-next-line
+      (this._jobs = new (require("./jobs"))(this))
     );
   }
 }
