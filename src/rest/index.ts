@@ -1,14 +1,15 @@
 import crypto from "crypto";
 import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
 
+import Jobs from "./jobs";
 import Accounts from "./accounts";
+import Sessions from "./sessions";
+import DataPoints from "./datapoints";
 import { Env } from "../utils/env";
 import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
 import { ConfigurationError, HTTPError } from "../errors";
 import { AuthConfiguration, AuthMethod } from "../config/types";
-import DataPoints from "./datapoints";
-import Jobs from "./jobs";
 
 // eslint-disable-next-line
 const moduleInfo = require("../../package.json");
@@ -29,6 +30,7 @@ export class AlfredClient {
 
   // Domains
   private _accounts?: Accounts;
+  private _sessions?: Sessions;
   private _dataPoints?: DataPoints;
   private _jobs?: Jobs;
 
@@ -237,11 +239,11 @@ export class AlfredClient {
     );
   }
 
-  get dataPoints(): DataPoints {
+  get sessions(): Sessions {
     return (
-      this._dataPoints ??
+      this._sessions ??
       // eslint-disable-next-line
-      (this._dataPoints = new (require("./datapoints"))(this))
+      (this._sessions = new (require("./sessions"))(this))
     );
   }
 
@@ -250,6 +252,13 @@ export class AlfredClient {
       this._jobs ??
       // eslint-disable-next-line
       (this._jobs = new (require("./jobs"))(this))
+    );
+  }
+  get dataPoints(): DataPoints {
+    return (
+      this._dataPoints ??
+      // eslint-disable-next-line
+      (this._dataPoints = new (require("./datapoints"))(this))
     );
   }
 }
