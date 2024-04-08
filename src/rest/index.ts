@@ -1,7 +1,10 @@
 import crypto from "crypto";
 import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
 
+import Jobs from "./jobs";
 import Accounts from "./accounts";
+import Sessions from "./sessions";
+import DataPoints from "./datapoints";
 import { Env } from "../utils/env";
 import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
@@ -27,6 +30,9 @@ export class AlfredClient {
 
   // Domains
   private _accounts?: Accounts;
+  private _sessions?: Sessions;
+  private _dataPoints?: DataPoints;
+  private _jobs?: Jobs;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
     this.auth = auth;
@@ -104,7 +110,8 @@ export class AlfredClient {
    * @param {string} [apiKey] - TA string that represents an API key used for
    * authentication. If no value is provided, the function will attempt to retrieve the API key from
    * the environment variable
-   * @returns A boolean indicating whether or not it was able to setup the authorization.
+   * @returns A boolean indicating whether it was able to set up the authorization.
+
    */
   private authWithApiKey(apiKey?: string) {
     let key = apiKey;
@@ -229,6 +236,29 @@ export class AlfredClient {
     return (
       // eslint-disable-next-line
       this._accounts ?? (this._accounts = new (require("./accounts"))(this))
+    );
+  }
+
+  get sessions(): Sessions {
+    return (
+      this._sessions ??
+      // eslint-disable-next-line
+      (this._sessions = new (require("./sessions"))(this))
+    );
+  }
+
+  get jobs(): Jobs {
+    return (
+      this._jobs ??
+      // eslint-disable-next-line
+      (this._jobs = new (require("./jobs"))(this))
+    );
+  }
+  get dataPoints(): DataPoints {
+    return (
+      this._dataPoints ??
+      // eslint-disable-next-line
+      (this._dataPoints = new (require("./datapoints"))(this))
     );
   }
 }
