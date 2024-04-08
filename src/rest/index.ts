@@ -34,7 +34,7 @@ export class AlfredClient {
   private _sessions?: Sessions;
   private _dataPoints?: DataPoints;
   private _jobs?: Jobs;
-  private _files?: Files
+  private _files?: Files;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
     this.auth = auth;
@@ -51,9 +51,11 @@ export class AlfredClient {
     // Setup response interceptor
     this._http.interceptors.response.use(
       (response) => {
-        if (response.config.responseType === 'arraybuffer' ||
-          response.config.responseType === 'stream' ||
-          response.config.responseType === 'blob') {
+        if (
+          response.config.responseType === "arraybuffer" ||
+          response.config.responseType === "stream" ||
+          response.config.responseType === "blob"
+        ) {
           return response;
         }
 

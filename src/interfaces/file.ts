@@ -1,4 +1,3 @@
-
 export interface File {
   id: string;
   creationDate: string;
@@ -39,7 +38,7 @@ export interface File {
 
 export interface UploadFilePayload {
   file: {
-    buffer: Buffer,
+    buffer: Buffer;
     originalName: string;
     mimetype: string;
   };
