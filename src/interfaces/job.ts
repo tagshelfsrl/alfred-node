@@ -46,3 +46,17 @@ export interface JobResult {
   emailSubject?: string;
   emailBody?: string;
 }
+
+export interface CreateJob {
+  sessionId?: string;
+  propagateMetadata?: boolean;
+  merge?: boolean;
+  decompose?: boolean;
+  metadata?: any;
+  channel?: string;
+  parentFilePrefix?: string;
+  pageRotation?: number;
+  container?: string;
+  fileName?: string;
+  fileNames?: string[];
+}

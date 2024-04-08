@@ -61,7 +61,7 @@ describe("rest: jobs", () => {
     client._http.get = mockRequest(client, mockResponse);
 
     const jobs = new Jobs(client);
-    const resp = await jobs.getJob("3fa85f64-5717-4562-b3fc-2c963f66afa6");
+    const resp = await jobs.get("3fa85f64-5717-4562-b3fc-2c963f66afa6");
 
     expect(resp).toEqual(mockResponse.data);
     expect(client._http.get).toHaveBeenCalledWith(
@@ -79,7 +79,9 @@ describe("rest: jobs", () => {
     client._http.post = mockRequest(client, mockResponse);
 
     const jobs = new Jobs(client);
-    const resp = await jobs.createJob("56d3dfc5-79f3-44f9-8a45-d3b6d9b73937");
+    const resp = await jobs.create({
+      sessionId: "56d3dfc5-79f3-44f9-8a45-d3b6d9b73937",
+    });
 
     expect(resp).toEqual(mockResponse.data);
     expect(client._http.post).toHaveBeenCalledWith("api/job/create", {
