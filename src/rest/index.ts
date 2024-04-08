@@ -2,6 +2,7 @@ import crypto from "crypto";
 import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
 
 import Jobs from "./jobs";
+import Files from "./files";
 import Accounts from "./accounts";
 import Sessions from "./sessions";
 import DataPoints from "./datapoints";
@@ -33,6 +34,7 @@ export class AlfredClient {
   private _sessions?: Sessions;
   private _dataPoints?: DataPoints;
   private _jobs?: Jobs;
+  private _files?: Files
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
     this.auth = auth;
@@ -49,6 +51,12 @@ export class AlfredClient {
     // Setup response interceptor
     this._http.interceptors.response.use(
       (response) => {
+        if (response.config.responseType === 'arraybuffer' ||
+          response.config.responseType === 'stream' ||
+          response.config.responseType === 'blob') {
+          return response;
+        }
+
         response.data = toCamelCase(response.data);
         return response;
       },
@@ -259,6 +267,14 @@ export class AlfredClient {
       this._dataPoints ??
       // eslint-disable-next-line
       (this._dataPoints = new (require("./datapoints"))(this))
+    );
+  }
+
+  get files(): Files {
+    return (
+      this._files ??
+      // eslint-disable-next-line
+      (this._files = new (require("./files"))(this))
     );
   }
 }
