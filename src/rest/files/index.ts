@@ -50,11 +50,11 @@ class Files {
   /**
    * Uploads a file to the server.
    *
-   * This method creates a new FormData instance, appends the session_id, file, and optional metadata to it,
+   * This method creates a new FormData instance, appends the sessionId, file, and optional metadata to it,
    * and then sends a POST request to the 'api/file/uploadfile' endpoint with the FormData as the body.
    *
    * @async
-   * @param {UploadFilePayload} payload - The payload for the file upload. It should include the session_id, file, and optional metadata.
+   * @param {UploadFilePayload} payload - The payload for the file upload. It should include the sessionId, file, and optional metadata.
    * @returns {Promise<{ fileId: string }>} - A promise that resolves to an object containing the id of the uploaded file.
    * @throws {Error} Will throw an error if the HTTP request fails.
    */
