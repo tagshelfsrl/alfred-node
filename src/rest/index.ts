@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
 
+import Jobs from "./jobs";
 import Accounts from "./accounts";
 import Sessions from "./sessions";
 import DataPoints from "./datapoints";
@@ -31,6 +32,7 @@ export class AlfredClient {
   private _accounts?: Accounts;
   private _sessions?: Sessions;
   private _dataPoints?: DataPoints;
+  private _jobs?: Jobs;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
     this.auth = auth;
@@ -239,8 +241,17 @@ export class AlfredClient {
 
   get sessions(): Sessions {
     return (
+      this._sessions ??
       // eslint-disable-next-line
-      this._sessions ?? (this._sessions = new (require("./sessions"))(this))
+      (this._sessions = new (require("./sessions"))(this))
+    );
+  }
+
+  get jobs(): Jobs {
+    return (
+      this._jobs ??
+      // eslint-disable-next-line
+      (this._jobs = new (require("./jobs"))(this))
     );
   }
   get dataPoints(): DataPoints {

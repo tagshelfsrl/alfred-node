@@ -26,15 +26,20 @@ describe("rest: datapoints", () => {
           metadataName: "metadataName_2",
           value: "value_2",
           classificationScore: 0.8,
-        }],
+        },
+      ],
     };
 
     client._http.get = mockRequest(client, mockResponse);
 
     const dataPoints = new DataPoints(client);
-    const resp = await dataPoints.getValues("3fa85f64-5717-4562-b3fc-2c963f66afa6");
+    const resp = await dataPoints.getValues(
+      "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    );
 
     expect(resp).toEqual(mockResponse.data);
-    expect(client._http.get).toHaveBeenCalledWith("api/values/file/3fa85f64-5717-4562-b3fc-2c963f66afa6");
+    expect(client._http.get).toHaveBeenCalledWith(
+      "api/values/file/3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    );
   });
 });
