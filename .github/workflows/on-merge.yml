@@ -47,6 +47,7 @@ jobs:
         with:
           node-version: 18
           registry-url: 'https://registry.npmjs.org'
+          scope: '@tagshelf'
       - run: npm ci
         if: ${{ steps.release.outputs.release_created }}
       - run: npm publish --access public
