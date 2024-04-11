@@ -1,11 +1,11 @@
 import crypto from "crypto";
 import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
 
-import Jobs from "./jobs";
-import Files from "./files";
-import Accounts from "./accounts";
-import Sessions from "./sessions";
-import DataPoints from "./datapoints";
+import { Jobs } from "./jobs";
+import { Files } from "./files";
+import { Accounts } from "./accounts";
+import { Sessions } from "./sessions";
+import { DataPoints } from "./datapoints";
 import { Env } from "../utils/env";
 import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
@@ -243,40 +243,26 @@ export class AlfredClient {
   }
 
   get accounts(): Accounts {
-    return (
-      // eslint-disable-next-line
-      this._accounts ?? (this._accounts = new (require("./accounts"))(this))
-    );
+    if (!this._accounts) this._accounts = new Accounts(this);
+    return this._accounts;
   }
 
   get sessions(): Sessions {
-    return (
-      this._sessions ??
-      // eslint-disable-next-line
-      (this._sessions = new (require("./sessions"))(this))
-    );
+    if (!this._sessions) this._sessions = new Sessions(this);
+    return this._sessions;
   }
 
   get jobs(): Jobs {
-    return (
-      this._jobs ??
-      // eslint-disable-next-line
-      (this._jobs = new (require("./jobs"))(this))
-    );
+    if (!this._jobs) this._jobs = new Jobs(this);
+    return this._jobs;
   }
   get dataPoints(): DataPoints {
-    return (
-      this._dataPoints ??
-      // eslint-disable-next-line
-      (this._dataPoints = new (require("./datapoints"))(this))
-    );
+    if (!this._dataPoints) this._dataPoints = new DataPoints(this);
+    return this._dataPoints;
   }
 
   get files(): Files {
-    return (
-      this._files ??
-      // eslint-disable-next-line
-      (this._files = new (require("./files"))(this))
-    );
+    if (!this._files) this._files = new Files(this);
+    return this._files;
   }
 }
