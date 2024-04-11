@@ -1,7 +1,7 @@
 import { AlfredClient } from "..";
 import { DataPointResult } from "../../interfaces";
 
-class DataPoints {
+export class DataPoints {
   constructor(private client: AlfredClient) {}
 
   /**
@@ -20,4 +20,4 @@ class DataPoints {
   }
 }
 
-export = DataPoints;
+export default DataPoints;

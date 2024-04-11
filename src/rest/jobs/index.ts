@@ -2,7 +2,7 @@ import { AlfredClient } from "..";
 import { JobResult, CreateJobResult, CreateJob } from "../../interfaces";
 import { toSnakeCase } from "../../utils/convert-case";
 
-class Jobs {
+export class Jobs {
   constructor(private client: AlfredClient) {}
 
   /**
@@ -39,4 +39,4 @@ class Jobs {
   }
 }
 
-export = Jobs;
+export default Jobs;

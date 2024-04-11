@@ -6,7 +6,7 @@ import {
 } from "../../interfaces";
 import FormData from "form-data";
 
-class Files {
+export class Files {
   constructor(private client: AlfredClient) {}
 
   /**
@@ -100,4 +100,4 @@ class Files {
   }
 }
 
-export = Files;
+export default Files;

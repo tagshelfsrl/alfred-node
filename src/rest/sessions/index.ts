@@ -1,7 +1,7 @@
 import { AlfredClient } from "..";
 import { CreateSessionResult, GetSessionResult } from "../../interfaces";
 
-class Sessions {
+export class Sessions {
   constructor(private client: AlfredClient) {}
 
   /**
@@ -25,4 +25,4 @@ class Sessions {
   }
 }
 
-export = Sessions;
+export default Sessions;
