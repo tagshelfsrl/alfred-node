@@ -2,6 +2,7 @@ import { Environment } from "./types";
 
 export interface ClientConfiguration {
   baseURL: string;
+  socketURL: string;
   version: number;
   environment: Environment;
 }
@@ -15,6 +16,7 @@ export class Configuration {
     if (env === "staging") {
       return {
         baseURL: "https://staging.tagshelf.com",
+        socketURL: "",
         version: 1,
         environment: "staging",
       };
@@ -22,6 +24,7 @@ export class Configuration {
 
     return {
       baseURL: "hthttps://app.tagshelf.com",
+      socketURL: "",
       version: 1,
       environment: "production",
     };
