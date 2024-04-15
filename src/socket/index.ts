@@ -4,6 +4,7 @@ import { ClientConfiguration } from "../config";
 import { JobEvent, FileEvent } from "./types";
 import { toCamelCase } from "../utils/convert-case";
 import { EventName } from "../config/constants";
+import { castProps, DataType } from "../utils/cast";
 
 export class AlfredSocketClient {
   private socket: Socket;
@@ -33,6 +34,7 @@ export class AlfredSocketClient {
   ) {
     this.socket.on(event, async (data: any) => {
       const parsed = <T>toCamelCase(data);
+      castProps(parsed, ["creationDate", "updateDate"], DataType.Date);
       await callback(parsed);
     });
   }
