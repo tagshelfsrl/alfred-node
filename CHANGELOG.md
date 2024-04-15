@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/tagshelfsrl/alfred-node/compare/v1.0.0...v1.1.0) (2024-04-15)
+
+
+### Features
+
+* **AL-829:** Support socket connection and events handling ([#31](https://github.com/tagshelfsrl/alfred-node/issues/31)) ([5bcc516](https://github.com/tagshelfsrl/alfred-node/commit/5bcc516062a3f4a04bbc6dd1b9a462e49a4720d5))
+
 ## 1.0.0 (2024-04-11)
 
 
