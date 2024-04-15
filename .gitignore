@@ -134,3 +134,6 @@ dist
 
 # VS code
 .vscode
+
+# Test/demo files
+demo.ts
