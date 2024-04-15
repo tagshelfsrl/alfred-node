@@ -2,6 +2,8 @@ import { io, Socket } from "socket.io-client";
 
 import { ClientConfiguration } from "../config";
 import { JobEvent, FileEvent } from "./types";
+import { toCamelCase } from "../utils/convert-case";
+import { EventName } from "../config/constants";
 
 export class AlfredSocketClient {
   private socket: Socket;
@@ -29,8 +31,9 @@ export class AlfredSocketClient {
     event: string,
     callback: (data: T) => void | Promise<void>
   ) {
-    this.socket.on(event, async (data: T) => {
-      await callback(data);
+    this.socket.on(event, async (data: any) => {
+      const parsed = <T>toCamelCase(data);
+      await callback(parsed);
     });
   }
 
@@ -39,7 +42,7 @@ export class AlfredSocketClient {
    * @param callback - A function that takes a `FileEvent` object and handles it.
    */
   onFileEvent(callback: (data: FileEvent) => void | Promise<void>) {
-    this._callback<FileEvent>("events:file", callback);
+    this._callback<FileEvent>(EventName.FileEvent, callback);
   }
 
   /**
@@ -47,7 +50,7 @@ export class AlfredSocketClient {
    * @param callback - A function that takes a `JobEvent` object and handles it.
    */
   onJobEvent(callback: (data: JobEvent) => void | Promise<void>) {
-    this._callback<JobEvent>("events:jobs", callback);
+    this._callback<JobEvent>(EventName.JobEvent, callback);
   }
 
   /**
