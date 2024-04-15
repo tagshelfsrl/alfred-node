@@ -1,8 +1,5 @@
 export enum DataType {
   Date = "date",
-  Number = "number",
-  String = "string",
-  Boolean = "boolean",
 }
 
 /**
@@ -25,15 +22,6 @@ export const castProps = (
           switch (dataType) {
             case DataType.Date:
               current[key] = new Date(current[key]);
-              break;
-            case DataType.Number:
-              current[key] = Number(current[key]);
-              break;
-            case DataType.String:
-              current[key] = String(current[key]);
-              break;
-            case DataType.Boolean:
-              current[key] = Boolean(current[key]);
               break;
             default:
               console.warn(

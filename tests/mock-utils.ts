@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { faker } from "@faker-js/faker";
 import { AlfredClient } from "../src";
 
 export const mockRequest = (client: AlfredClient, mockResp: any) => {
@@ -49,7 +48,7 @@ export const mockFileEvent = () => {
       company_id: crypto.randomUUID(),
       company_name: "TAGSHELF",
       blob_name: crypto.randomUUID(),
-      blob_url: faker.image.url(),
+      blob_url: "https://picsum.photos/200/300",
       file_id: crypto.randomUUID(),
       tag_id: crypto.randomUUID(),
       tag_name: "INVOICE",

@@ -1,5 +1,6 @@
 import { EventName } from "../../src/config/constants";
 import { mockFileEvent, mockJobEvent } from "../mock-utils";
+
 let mockFailAuth = false;
 
 export const socket = {
