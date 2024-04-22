@@ -50,6 +50,20 @@ client.jobs.get("job-id").then((resp) => console.log(resp));
 
 #### Create job
 
+| Parameter | Type | Description |
+| --- | --- | --- |
+| sessionId | string | Session ID |
+| propagateMetadata | boolean | Propagate metadata |
+| merge | boolean | Merge files |
+| decompose | boolean | Decompose |
+| metadata | any | Metadata of the job |
+| channel | string | Channel |
+| parentFilePrefix | string | Prefix of the parent file |
+| pageRotation | number | Page rotation |
+| container | string | Container |
+| fileName | string | Name of the file |
+| fileNames | string[] | Names of the files |
+
 ```js
 // Create a job
 const job: CreateJob = {
@@ -127,7 +141,6 @@ client.files.uploadFile(file).then((resp) => console.log(resp));
 
 #### Upload file from URL
 
-<!-- upload table params -->
 | Parameter | Type | Description |
 | --- | --- | --- |
 | url | string | URL of the file to upload |
