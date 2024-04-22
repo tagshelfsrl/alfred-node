@@ -1,6 +1,20 @@
-# alfred-node
+# Overview
 
-TypeScript/Node library for seamless integration with Alfred's Intelligent Process Automation platform.
+`alfred-node` is a TypeScript/Node.js library that provides a streamlined approach to integrate with Alfred's Intelligent Process Automation platform. It enables developers to manage accounts, process and manipulate data points, handle job creation and management, manage sessions, and handle file operations with ease.
+
+## Installation
+
+To use the `alfred-node` library, first install it via npm:
+
+```bash
+npm install @tagshelf/alfred
+```
+
+or using yarn:
+
+```bash
+yarn add @tagshelf/alfred
+```
 
 ## Usage
 
@@ -187,4 +201,54 @@ client.files.download("file-id").then((resp) => {
   "originalName": "file-name",
   "mimetype": "application/pdf"
 }
+```
+
+## Socket Events
+
+The Alfred client provides a way to listen to socket events.
+
+### Getting started
+
+To get started, you need to create an instance of the AlfredSocketClient class.
+
+```js
+import { Configuration, AlfredSocketClient } from "./src";
+
+const socketClient = new AlfredSocketClient(
+  Configuration.v1("staging"),
+  "AXXXXXXXXXXXXXXXXX"
+);
+```
+
+#### File event
+
+This event is emitted when a file is processed.
+
+```js
+socketClient.onFileEvent((data) => console.log(data));
+```
+
+#### Job event
+
+This event is emitted when a job is processed.
+
+```js
+socketClient.onJobEvent((data) => console.log(data));
+
+```
+
+#### Custom event
+
+This event is emitted when a custom event is triggered.
+
+```js
+socketClient.on("custom-event", (data) => console.log(data));
+```
+
+#### Disconnect
+
+This method disconnects the socket.
+
+```js
+socketClient.disconnect();
 ```
