@@ -33,7 +33,7 @@ client.accounts.whoAmI().then((resp) => console.log(resp.data));
 
 ### Accounts
 
-Account API allows you to get information about the account you are currently authenticated with.
+Account API allows you to get information about the account you are currently authenticated with. To see more information visit our [official documentation](https://docs.tagshelf.dev/enpoints/account).
 
 #### Get account information
 
@@ -54,6 +54,25 @@ Data Points are the core of Alfred's platform and represent data that you want t
 client.dataPoints.getValues("file-id").then((resp) => console.log(resp));
 ```
 
+### Sessions
+
+A Session is a mechanism designed for asynchronous file uploads. It serves as a container or grouping for files that are uploaded at different times or from various sources, but are all part of a single Job. To see more information visit our [official documentation](https://docs.tagshelf.dev/enpoints/deferred-session).
+  
+#### Get session by ID
+
+```js
+
+// Get session by ID
+client.sessions.get("session-id").then((resp) => console.log(resp));
+```
+
+#### Create session
+
+```js
+// Create a session
+client.sessions.create().then((resp) => console.log(resp));
+```
+
 ### Jobs
 
 A Job represents a single unit of work that group one or more Files within Alfred. To see more information visit our [official documentation](https://docs.tagshelf.dev/enpoints/job).
@@ -70,16 +89,16 @@ client.jobs.get("job-id").then((resp) => console.log(resp));
 | Parameter | Type | Description |
 | --- | --- | --- |
 | sessionId | string | Session ID |
+| metadata | any | Metadata of the job |
 | propagateMetadata | boolean | If `true` ensures that the provided metadata at the Job level is attached to all the specified Files. |
 | merge | boolean | If `true`, when all provided Files are either images or PDFs, the system combines them into a single file for the purpose of processing. |
-| decompose | boolean | Decompose |
-| metadata | any | Metadata of the job |
+| decompose | boolean | If `true`, when the provided File is a PDF, the system will decompose it into individual pages for processing. |
 | channel | string | Channel |
-| parentFilePrefix | string | Prefix of the parent file |
+| parentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
 | pageRotation | number | Page rotation |
-| container | string | Container |
-| fileName | string | Name of the file |
-| fileNames | string[] | Names of the files |
+| container | string | Virtual container where the referenced remote file is located.|
+| filename | string |nique name of the file within an object storage source.|
+| filenames | string[] | Array of unique names of the files within an object storage source.|
 
 ```js
 // Create a job
@@ -101,28 +120,9 @@ const job: CreateJob = {
 client.jobs.create(job).then((resp) => console.log(resp));
 ```
 
-### Sessions
-
-A Session is a mechanism designed for asynchronous file uploads. It serves as a container or grouping for files that are uploaded at different times or from various sources, but are all part of a single Job.
-  
-#### Get session by ID
-
-```js
-
-// Get session by ID
-client.sessions.get("session-id").then((resp) => console.log(resp));
-```
-
-#### Create session
-
-```js
-// Create a session
-client.sessions.create().then((resp) => console.log(resp));
-```
-
 ### Files
 
-These are the files that you want to process in Alfred.
+File is an individual document or data unit undergoing specialized operations tailored for document analysis and managemet. To see more information visit our [official documentation](https://docs.tagshelf.dev/enpoints/file).
 
 #### Get file by ID
 
@@ -135,9 +135,9 @@ client.files.get("file-id").then((resp) => console.log(resp));
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| file | File | File to upload |
-| sessionId | string | Session ID |
-| metadata | any | Metadata of the file |
+| file | File | Object containing the file buffer, original name, and mimetype.|
+| sessionId | string | Session ID to link multiple files to a job.|
+| metadata | any |  JSON object or JSON array of objects containing metadata fields for a given remote file.|
 
 ```js
 // Upload file
@@ -160,16 +160,16 @@ client.files.uploadFile(file).then((resp) => console.log(resp));
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| url | string | URL of the file to upload |
-| urls | string[] | URLs of the files to upload |
-| source | string | Source of the file |
-| container | string | Container of the file |
-| filename | string | Name of the file |
-| filenames | string[] | Names of the files |
-| merge | boolean | Merge files |
-| metadata | any | Metadata of the file |
-| propagateMetadata | boolean | Propagate metadata |
-| parentFilePrefix | string | Prefix of the parent file |
+| url | string | URL of the file to upload (use url, when you have an URl to single remote file.)|
+| urls | string[] | URLs of the files to upload. (Use urls, when you have URl's for multiple remote files. the current limit for this parameter is **100 elements**.) |
+| source | string | Configured object storage source name. Ideal for referring to files hosted in existing cloud containers. When used, **file_name** and **container** are required. |
+| container | string | Virtual container where the referenced remote file is located. When used, **source** and **file_name** are required.|
+| filename | string | Unique name of the file within an object storage source. When used, **source** and **container** are required.|
+| filenames | string[] | Array of unique names of the files within an object storage source. When used, **source** and **container** are required.|
+| merge | boolean | Boolean value [true/false] - When set to true, will merge all of the remote files into a single PDF file. All of the remote files MUST be images. <br><br>By default this field is set to **false**. |
+| metadata | any | JSON object or JSON array of objects containing metadata fields for a given remote file. <br><br>When merge field is set to **false**:<br><br>When using the urls field this should be a JSON object array that matches the urls field array length.<br><br>When using the url field the metadata field should be a JSON object.<br><br>When the merge field is set to true: The metadata field should be a JSON object.|
+| propagateMetadata | boolean | This parameter enables the specification of a single metadata object to be applied across multiple files from remote URLs or remote sources. When used, `propagate_metadata` ensures that the defined metadata is consistently attached to all the specified files during their upload and processing. This feature is particularly useful for maintaining uniform metadata across a batch of files, streamlining data organization and retrieval. |
+| parentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
 
 ```js
 // Upload file from URL
@@ -233,7 +233,7 @@ socketClient.onFileEvent((data) => console.log(data));
 
 #### Job event
 
-This event is emitted when a job is processed.
+Alfred performs asynchronous document classification, extraction, and indexing on a variety of file types, from scanned images to digital documents. Each Job in Alfred encapsulates the complete workflow needed to process one or more files. The events detailed here offer insights into how a Job progresses, fails, retries, or completes its tasks, serving as crucial hooks for your application's business logic and event-driven architecture.
 
 ```js
 socketClient.onJobEvent((data) => console.log(data));
