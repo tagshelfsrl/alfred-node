@@ -122,7 +122,7 @@ client.jobs.create(job).then((resp) => console.log(resp));
 
 ### Files
 
-File is an individual document or data unit undergoing specialized operations tailored for document analysis and managemet. To see more information visit our [official documentation](https://docs.tagshelf.dev/enpoints/file).
+File is an individual document or data unit undergoing specialized operations tailored for document analysis and management. To see more information visit our [official documentation](https://docs.tagshelf.dev/enpoints/file).
 
 #### Get file by ID
 
