@@ -208,7 +208,7 @@ client.files.download("file-id").then((resp) => {
 
 ## Real-Time Events
 
-The `alfred-node` library provides a way to listen to events emitted by Alfred IPA in real-time through a websockets implementation.
+The `alfred-node` library provides a way to listen to events emitted by Alfred IPA in real-time through a websockets implementation. This feature is particularly useful when you need to monitor the progress of a Job, File, or any other event that occurs within the Alfred platform. To see more information visit our [official documentation](https://docs.tagshelf.dev/event-api).
 
 ### Getting started
 
@@ -233,7 +233,7 @@ socketClient.onFileEvent((data) => console.log(data));
 
 #### Job event
 
-Alfred performs asynchronous document classification, extraction, and indexing on a variety of file types, from scanned images to digital documents. Each Job in Alfred encapsulates the complete workflow needed to process one or more files. The events detailed here offer insights into how a Job progresses, fails, retries, or completes its tasks, serving as crucial hooks for your application's business logic and event-driven architecture.
+Alfred performs asynchronous document classification, extraction, and indexing on a variety of file types. The events detailed here offer insights into how a Job progresses, fails, retries, or completes its tasks. To see more details about Job events, visit our [official documentation](https://docs.tagshelf.dev/event-api/jobevents).
 
 ```js
 socketClient.onJobEvent((data) => console.log(data));
