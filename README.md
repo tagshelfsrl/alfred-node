@@ -97,7 +97,7 @@ client.jobs.get("job-id").then((resp) => console.log(resp));
 | parentFilePrefix | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
 | pageRotation | number | Page rotation |
 | container | string | Virtual container where the referenced remote file is located.|
-| filename | string |nique name of the file within an object storage source.|
+| filename | string | Unique name of the file within an object storage source.|
 | filenames | string[] | Array of unique names of the files within an object storage source.|
 
 ```js
