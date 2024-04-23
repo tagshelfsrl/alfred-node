@@ -43,7 +43,10 @@ client.accounts.whoAmI().then((resp) => console.log(resp.data));
 
 ### Data Points
 
-DataPoints are the core of Alfred's platform. They are the data that you want to process.
+Data Points are the core of Alfred's platform and represent data that you want to extract. To see more information visit our [official documentation](https://docs.tagshelf.dev/enpoints/metadata).
+
+> [!IMPORTANT]  
+> Data Points where previously known as Metadata.
 
 #### Get dataPoint by File ID
 
