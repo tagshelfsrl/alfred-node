@@ -48,7 +48,7 @@ Data Points are the core of Alfred's platform and represent data that you want t
 > [!IMPORTANT]  
 > Data Points where previously known as Metadata.
 
-#### Get dataPoint by File ID
+#### Get Data Point by File ID
 
 ```js
 client.dataPoints.getValues("file-id").then((resp) => console.log(resp));
