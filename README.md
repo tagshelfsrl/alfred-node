@@ -161,7 +161,7 @@ client.files.uploadFile(file).then((resp) => console.log(resp));
 | Parameter | Type | Description |
 | --- | --- | --- |
 | url | string | URL of the file to upload (use url, when you have an URl to single remote file.)|
-| urls | string[] | URLs of the files to upload. (Use urls, when you have URl's for multiple remote files. the current limit for this parameter is **100 elements**.) |
+| urls | string[] | URLs of the files to upload. (Use urls, when you have URl's for multiple remote files. The current limit for this parameter is **100 elements**.) |
 | source | string | Configured object storage source name. Ideal for referring to files hosted in existing cloud containers. When used, **file_name** and **container** are required. |
 | container | string | Virtual container where the referenced remote file is located. When used, **source** and **file_name** are required.|
 | filename | string | Unique name of the file within an object storage source. When used, **source** and **container** are required.|
