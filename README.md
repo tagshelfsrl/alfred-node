@@ -70,8 +70,8 @@ client.jobs.get("job-id").then((resp) => console.log(resp));
 | Parameter | Type | Description |
 | --- | --- | --- |
 | sessionId | string | Session ID |
-| propagateMetadata | boolean | Propagate metadata |
-| merge | boolean | Merge files |
+| propagateMetadata | boolean | If `true` ensures that the provided metadata at the Job level is attached to all the specified Files. |
+| merge | boolean | If `true`, when all provided Files are either images or PDFs, the system combines them into a single file for the purpose of processing. |
 | decompose | boolean | Decompose |
 | metadata | any | Metadata of the job |
 | channel | string | Channel |
@@ -103,7 +103,7 @@ client.jobs.create(job).then((resp) => console.log(resp));
 
 ### Sessions
 
-Sessions are the way to hadle the processing of multiple documents in Alfred with deferred upload.
+A Session is a mechanism designed for asynchronous file uploads. It serves as a container or grouping for files that are uploaded at different times or from various sources, but are all part of a single Job.
   
 #### Get session by ID
 
@@ -156,7 +156,7 @@ const file: UploadFilePayload = {
 client.files.uploadFile(file).then((resp) => console.log(resp));
 ```
 
-#### Upload file from URL
+#### Upload file from remote source
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -191,7 +191,7 @@ This method returns a buffer with the file content, the original name and the mi
 ```js
 // Download file it returns a buffer
 client.files.download("file-id").then((resp) => {
-  fs.writeFileSync(resp.originalName, resp.file.buffer);
+  fs.writeFileSync(resp.originalName, resp.buffer);
 });
 
 ```
@@ -206,9 +206,9 @@ client.files.download("file-id").then((resp) => {
 }
 ```
 
-## Socket Events
+## Real-Time Events
 
-The Alfred client provides a way to listen to socket events.
+The `alfred-node` library provides a way to listen to events emitted by Alfred IPA in real-time through a websockets implementation.
 
 ### Getting started
 
@@ -225,7 +225,7 @@ const socketClient = new AlfredSocketClient(
 
 #### File event
 
-This event is emitted when a file is processed.
+These events are specifically designed to respond to a variety of actions or status changes related to Files. To see more details about File events, visit our [official documentation](https://docs.tagshelf.dev/event-api/fileevents).
 
 ```js
 socketClient.onFileEvent((data) => console.log(data));
@@ -242,7 +242,7 @@ socketClient.onJobEvent((data) => console.log(data));
 
 #### Custom event
 
-This event is emitted when a custom event is triggered.
+This enables you to select the specific event you wish to monitor. It's particularly beneficial when new events are introduced that have not yet received official support within the library.
 
 ```js
 socketClient.on("custom-event", (data) => console.log(data));
