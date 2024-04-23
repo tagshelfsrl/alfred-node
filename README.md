@@ -56,7 +56,7 @@ client.dataPoints.getValues("file-id").then((resp) => console.log(resp));
 
 ### Jobs
 
-Jobs are the way to manage the processing of documents in Alfred.
+A Job represents a single unit of work that group one or more Files within Alfred. To see more information visit our [official documentation](https://docs.tagshelf.dev/enpoints/job).
 
 #### Get job by ID
 
