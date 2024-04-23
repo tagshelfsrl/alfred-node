@@ -41,7 +41,7 @@ Account API allows you to get information about the account you are currently au
 client.accounts.whoAmI().then((resp) => console.log(resp.data));
 ```
 
-### DataPoints
+### Data Points
 
 DataPoints are the core of Alfred's platform. They are the data that you want to process.
 
