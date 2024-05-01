@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.0...v1.1.1) (2024-05-01)
+
+
+### Bug Fixes
+
+* Improved README.md ([#35](https://github.com/tagshelfsrl/alfred-node/issues/35)) ([f9c6e8a](https://github.com/tagshelfsrl/alfred-node/commit/f9c6e8a4d09825e3fde6e0d458484646d8473ef6))
+
 ## [1.1.0](https://github.com/tagshelfsrl/alfred-node/compare/v1.0.0...v1.1.0) (2024-04-15)
 
 
