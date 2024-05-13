@@ -6,15 +6,15 @@
   - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
-    - [Initialize the Client](#initialize-the-client)
-      - [Environments description](#environments-description)
-      - [Authentication Methods](#authentication-methods)
-    - [Upload Files](#upload-files)
-      - [Upload a file from a local source](#upload-a-file-from-a-local-source)
-      - [Upload a file from a remote source](#upload-a-file-from-a-remote-source)
-    - [Create Jobs](#create-jobs)
-    - [Get Job Information](#get-job-information)
-    - [Retrieve Data Points](#retrieve-data-points)
+  - [Initialize the Client](#initialize-the-client)
+    - [Environments description](#environments-description)
+    - [Authentication Methods](#authentication-methods)
+  - [Upload Files](#upload-files)
+    - [Upload a file from a local source](#upload-a-file-from-a-local-source)
+    - [Upload a file from a remote source](#upload-a-file-from-a-remote-source)
+  - [Create Jobs](#create-jobs)
+  - [Get Job Information](#get-job-information)
+  - [Retrieve Data Points](#retrieve-data-points)
   - [Real-Time Events](#real-time-events)
     - [Getting started](#getting-started)
       - [File event](#file-event)
@@ -29,6 +29,8 @@
       - [Domains](#domains)
       - [File Domain Methods](#file-domain-methods)
         - [`uploadFile` Method](#uploadfile-method)
+- [Contributing](#contributing)
+- [License](#license)
 
 
 # Overview
@@ -394,3 +396,11 @@ uploadFile(payload: UploadFilePayload): Promise<UploadFileResponse>;
   | mimetype  | string | File mimetype |
   | size      | number | File size |
   | metadata  | any | File metadata |
+
+# Contributing
+
+Contributions to improve this library are welcome. Please feel free to fork the repository, make your changes, and submit a pull request for review.
+
+# License
+
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/tagshelfsrl/dotnet-alfred-api-wrapper/blob/feature/AL-887/LICENSE) file for details.
