@@ -83,12 +83,12 @@ yarn add @tagshelf/alfred
 
 # Usage
 
-### Initialize the Client
+## Initialize the Client
 
 Begin by creating an instance of the Alfred client using the desired environment (Production or Staging) along with your preferred authentication method. You can find detailed information about the Alfred Client in the reference section of this document
 
 
-#### Environments description
+### Environments description
 
 **Production**: The production environment are used for live applications and real-world scenarios. It is recommended to use this environment for production-ready applications. The frontend URL for the production environment is https://app.tagshelf.com
 
@@ -96,7 +96,7 @@ Begin by creating an instance of the Alfred client using the desired environment
 **Staging**: The staging environment is used for testing and development purposes. It is recommended to use this environment for testing and development scenarios. The frontend URL for the staging environment is https://staging.tagshelf.com
 Check out this simple example in TypeScript to get up and running:
 
-#### Authentication Methods
+### Authentication Methods
 To obtain the necessary credentials for the following authentication methods, please refer to authentication section in the [official API documentation](https://docs.tagshelf.dev/authentication) or contact the Alfred support team.
 
 The following examples demonstrate how to initialize the client with different environments and different authentication methods:
@@ -144,7 +144,7 @@ const client = new AlfredClient(config, {
     }});
 ```
 
-### Upload Files
+## Upload Files
 
 With the client initialized, you can now upload files to Alfred using the `files` domain of the client 
 and its upload capabilities. 
@@ -155,7 +155,7 @@ You can upload files in two different ways:
 2. **Upload a file from a remote source**: This method enables you to upload a file from a remote source (e.g., a URL) to Alfred.
 
 
-#### Upload a file from a local source
+### Upload a file from a local source
 
 In order to upload a file from a local source, you need to create a deferred session first and then upload the files to the session.
 Once all the files are uploaded, you need to create a job to process the files.
@@ -182,7 +182,7 @@ client.sessions.create().then((session) => {
 });
 ```
 
-#### Upload a file from a remote source
+### Upload a file from a remote source
 When uploading files from a remote source, jobs are created directly without the need for a session, so you need to provide all the necessary files and metadata needed for the job.
 
 ```js
@@ -200,7 +200,7 @@ client.files.upload({
 }).then((resp) => console.log(resp));
 ```
 
-### Create Jobs
+## Create Jobs
 A Job represents a single unit of work that group one or more Files within Alfred. To create a job, you need to provide the session ID, metadata, and other optional parameters.
 This method creates and triggers a job in Alfred, which processes the uploaded files.
 
@@ -230,7 +230,7 @@ client.jobs.create(job).then((resp) => console.log(resp));
 ```
 
 
-### Get Job Information
+## Get Job Information
 
 Once you've triggered a Job, you can get its information by providing the job ID.
 This way you can check the stage or status of the job processing so you can access to its results.
@@ -246,7 +246,7 @@ import { AlfredClient, Configuration } from "@tagshelf/alfred";
 client.jobs.get("job-id").then((resp) => console.log(resp));
 ```
 
-### Retrieve Data Points
+## Retrieve Data Points
 
 Data Points are the core of Alfred's platform and represent data that you want to extract. Once your job is processed,
 you can retrieve the data points from the files if job was successful. For more information visit the Metadata section of our [official documentation](https://docs.tagshelf.dev/enpoints/metadata).
