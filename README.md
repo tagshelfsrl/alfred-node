@@ -119,7 +119,7 @@ For API Key authentication, and production environment use the following code:
 import { AlfredClient, Configuration } from "@tagshelf/alfred";
 
 // Choose environment
-const config = Configuration.v1("production");
+const config = Configuration.default("production");
 
 // Initialize Alfred client with API Key
 const client = new AlfredClient(config, {
@@ -132,7 +132,7 @@ For HMAC authentication, and staging environment use the following code:
 import { AlfredClient, Configuration } from "@tagshelf/alfred";
 
 // Choose environment
-const config = Configuration.v1("staging");
+const config = Configuration.default("staging");
 
 // Initialize Alfred client with HMAC
 const client = new AlfredClient(config, {
@@ -147,7 +147,7 @@ For OAuth authentication, and production environment use the following code:
 import { AlfredClient, Configuration } from "@tagshelf/alfred";
 
 // Choose environment
-const config = Configuration.v1("production");
+const config = Configuration.default("production");
 
 // Initialize Alfred client with OAuth
 const client = new AlfredClient(config, {
@@ -287,7 +287,7 @@ To get started, you need to create an instance of the AlfredSocketClient class.
 import { Configuration, AlfredSocketClient } from "./src";
 
 const socketClient = new AlfredSocketClient(
-  Configuration.v1("staging"),
+  Configuration.default("staging"),
   "AXXXXXXXXXXXXXXXXX"
 );
 ```
@@ -344,7 +344,7 @@ new AlfredClient(config: Configuration, auth: Auth);
 The Configuration class provides the configuration for the AlfredClient.
 
 ```js
-Configuration.v1(environment: Environment);
+Configuration.default(environment: Environment);
 ```
 
 ### Authentication
