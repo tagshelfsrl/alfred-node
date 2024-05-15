@@ -379,21 +379,23 @@ The AlfredClient class provides access to the following domains:
 
 Each domain provides access to a set of methods that interact with the Alfred API.
 
+---
+
 #### Session Domain Methods
 
 ##### -  `create()` Method
 
-**Signature**
+***Signature***
 
 ```js
 create(): Promise<CreateSessionResponse>;
 ```
 
-**Description**
+***Description***
 
 Creates a new deferred session in Alfred.
 
-**Returns**
+***Returns***
 - A Promise that resolves to an object of type `CreateSessionResponse` with the following properties:
 
 | Key       | Type | Description |
@@ -403,21 +405,20 @@ Creates a new deferred session in Alfred.
 
 ##### -  `get()` Method
 
-**Signature**
+***Signature***
 
 ```js
 get(id: string): Promise<GetSessionResponse>;
 ```
 
-**Description**
+***Description***
 
 Retrieves a deferred session by its ID.
 
-**Parameters**
-
+***Parameters***
 - `id`: The ID of the session to retrieve.
 
-**Returns**
+***Returns***
 - A Promise that resolves to an object of type `GetSessionResponse` with the following properties:
 
 | Key       | Type | Description |
@@ -425,22 +426,23 @@ Retrieves a deferred session by its ID.
 | `id`        | string | Session ID |
 | `createdAt` | string | Session creation date |
 
+---
+
 #### File Domain Methods
 
 ##### `uploadFile()` Method
 
-**Signature**
+***Signature***
 
 ```js
 uploadFile(payload: UploadFilePayload): Promise<UploadFileResponse>;
 ```
 
-**Description**
+***Description***
 
 Uploads a local file to Alfred.
 
-**Parameters**
-- `payload`: An object of type `UploadFilePayload` with the following properties:
+***Parameters***- `payload`: An object of type `UploadFilePayload` with the following properties:
  
 - | Key       | Type | Description |
   |-----------| --- | --- |
@@ -448,7 +450,7 @@ Uploads a local file to Alfred.
   | `sessionId` | string | Session ID to link multiple files to a job.|
   | `metadata`  | any |  JSON object or JSON array of objects containing metadata fields for a given remote file.|
 
-**Returns**
+***Returns***
 - A Promise that resolves to an object of type `UploadFileResponse` with the following properties:
 - | Key       | Type | Description |
   |-----------| --- | --- |
@@ -460,18 +462,17 @@ Uploads a local file to Alfred.
 
 ##### `upload()` Method
 
-**Signature**
+***Signature***
 
 ```js
 upload(payload: FileUploadPayload): Promise< { fileId: string }>;
 ```
 
-**Description**
+***Description***
 
 Uploads a file from a remote source to Alfred.
 
-**Parameters**
-- `payload`: An object of type `FileUploadPayload` with the following properties:
+***Parameters***- `payload`: An object of type `FileUploadPayload` with the following properties:
 
 | Key                 | Type | Description |
 |---------------------| --- | --- |
@@ -486,7 +487,7 @@ Uploads a file from a remote source to Alfred.
 | `propagateMetadata` | boolean | This parameter enables the specification of a single metadata object to be applied across multiple files from remote URLs or remote sources. When used, `propagate_metadata` ensures that the defined metadata is consistently attached to all the specified files during their upload and processing. This feature is particularly useful for maintaining uniform metadata across a batch of files, streamlining data organization and retrieval. |
 | `parentFilePrefix`  | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
 
-**Returns**
+***Returns***
 - A Promise that resolves to an object of type `UploadResponse` with the following properties:
 - | Key       | Type | Description |
   |-----------| --- | --- |
@@ -496,22 +497,23 @@ Uploads a file from a remote source to Alfred.
   | `size`      | number | File size |
   | `metadata`  | any | File metadata |
 
+---
+
 #### Job Domain Methods
 
 ##### `create()` Method
 
-**Signature**
+***Signature***
 
 ```js
 create(job: CreateJob): Promise<CreateJobResult>;
 ```
 
-**Description**
+***Description***
 
 Creates a new job in Alfred.
 
-**Parameters**
-
+***Parameters***
 - `job`: An object of type `CreateJob` with the following properties:
 
 | Key               | Type | Description |
@@ -528,7 +530,7 @@ Creates a new job in Alfred.
 | `filename`        | string | Unique name of the file within an object storage source.|
 | `filenames`       | string[] | Array of unique names of the files within an object storage source.|
 
-**Returns**
+***Returns***
 - A Promise that resolves to an object of type `CreateJobResult` with the following properties:
 
 | Key         | Type | Description            |
@@ -537,21 +539,20 @@ Creates a new job in Alfred.
 
 ##### `get()` Method
 
-**Signature**
+***Signature***
     
 ```js
 get(id: string): Promise<JobResult>;
 ```
 
-**Description**
+***Description***
 
 Retrieves a job by its ID.
 
-**Parameters**
-
+***Parameters***
 - `id`: The ID of the job to retrieve.
 
-**Returns**
+***Returns***
 - A Promise that resolves to an object of type `JobResult` with the following properties:
 
 
@@ -591,26 +592,26 @@ Retrieves a job by its ID.
 | `emailSubject` | string (optional) | Email subject |
 | `emailBody` | string (optional) | Email body |
 
+---
+
 #### Data Points Domain Methods
 
 ##### `getValues()` Method
 
-**Signature**
+***Signature***
 
 ```js
 getValues(fileId: string): Promise<DataPointResult[]>;
 ```
 
-**Description**
+***Description***
 
 Retrieves the data points of a file by its ID.
 
-**Parameters**
-
+***Parameters***
 - `fileId: string`: The ID of the file to retrieve data points from.
 
-**Returns**
-
+***Returns***
 - A Promise that resolves to an object of type `DataPointResult[]` with the following properties:
 - | Key       | Type | Description |
   |-----------| --- | --- |
@@ -620,24 +621,25 @@ Retrieves the data points of a file by its ID.
 - | `metadataName` | string | Metadata name |
   | `classificationScore` | number | Classification score |
 
+---
+
 #### Account Domain Methods
 
 ##### `whoAmI()` Method
 
-**Signature**
+***Signature***
 
 ```js
 whoAmI(): Promise<any>;
 ```
 
-**Description**
+***Description***
 
 Retrieves the account information of the authenticated user.
 
-**Returns**
-
+****Returns****
 - A Promise that resolves to an object of type `any` with the information of the authenticated user.
-
+---
 # Contributing
 
 Contributions to improve this library are welcome. Please feel free to fork the repository, make your changes, and submit a pull request for review.
