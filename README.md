@@ -1,3 +1,46 @@
+- [Table of Contents](#table-of-contents)
+- [Overview](#overview)
+  - [Alfred](#alfred)
+  - [Features](#features)
+  - [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Initialize the Client](#initialize-the-client)
+    - [Environments description](#environments-description)
+    - [Authentication Methods](#authentication-methods)
+  - [Upload Files](#upload-files)
+    - [Upload a file from a local source](#upload-a-file-from-a-local-source)
+    - [Upload a file from a remote source](#upload-a-file-from-a-remote-source)
+  - [Create Jobs](#create-jobs)
+  - [Get Job Information](#get-job-information)
+  - [Retrieve Data Points](#retrieve-data-points)
+  - [Real-Time Events](#real-time-events)
+    - [Getting started](#getting-started)
+      - [File event](#file-event)
+      - [Job event](#job-event)
+      - [Custom event](#custom-event)
+      - [Disconnect](#disconnect)
+- [Reference](#reference)
+  - [`AlfredClient`](#alfredclient)
+    - [Constructor](#constructor)
+    - [Client Configuration](#client-configuration)
+    - [Authentication](#authentication)
+    - [Domains](#domains)
+    - [Session Domain Methods](#session-domain-methods)
+      - [-  `create()` Method](#---create-method)
+      - [-  `get()` Method](#---get-method)
+    - [File Domain Methods](#file-domain-methods)
+      - [`uploadFile()` Method](#uploadfile-method)
+      - [`upload()` Method](#upload-method)
+    - [Job Domain Methods](#job-domain-methods)
+      - [`create()` Method](#create-method)
+      - [`get()` Method](#get-method)
+    - [Data Points Domain Methods](#data-points-domain-methods)
+      - [`getValues()` Method](#getvalues-method)
+    - [Account Domain Methods](#account-domain-methods)
+      - [`whoAmI()` Method](#whoami-method)
+- [Contributing](#contributing)
+- [License](#license)
 # Table of Contents
 - [Table of Contents](#table-of-contents)
 - [Overview](#overview)
@@ -27,19 +70,19 @@
     - [Client Configuration](#client-configuration)
     - [Authentication](#authentication)
     - [Domains](#domains)
-      - [Session Domain Methods](#session-domain-methods)
-        - [-  `create()` Method](#---create-method)
-        - [-  `get()` Method](#---get-method)
-      - [File Domain Methods](#file-domain-methods)
-        - [`uploadFile()` Method](#uploadfile-method)
-        - [`upload()` Method](#upload-method)
-      - [Job Domain Methods](#job-domain-methods)
-        - [`create()` Method](#create-method)
-        - [`get()` Method](#get-method)
-      - [Data Points Domain Methods](#data-points-domain-methods)
-        - [`getValues()` Method](#getvalues-method)
-      - [Account Domain Methods](#account-domain-methods)
-        - [`whoAmI()` Method](#whoami-method)
+    - [Session Domain Methods](#session-domain-methods)
+      - [-  `create()` Method](#---create-method)
+      - [-  `get()` Method](#---get-method)
+    - [File Domain Methods](#file-domain-methods)
+      - [`uploadFile()` Method](#uploadfile-method)
+      - [`upload()` Method](#upload-method)
+    - [Job Domain Methods](#job-domain-methods)
+      - [`create()` Method](#create-method)
+      - [`get()` Method](#get-method)
+    - [Data Points Domain Methods](#data-points-domain-methods)
+      - [`getValues()` Method](#getvalues-method)
+    - [Account Domain Methods](#account-domain-methods)
+      - [`whoAmI()` Method](#whoami-method)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -383,6 +426,8 @@ Each domain provides access to a set of methods that interact with the Alfred AP
 
 ### Session Domain Methods
 
+---
+
 #### -  `create()` Method
 
 ***Signature***
@@ -402,6 +447,8 @@ Creates a new deferred session in Alfred.
 |-----------| --- | --- |
 | `id`        | string | Session ID |
 | `createdAt` | string | Session creation date |
+
+---
 
 #### -  `get()` Method
 
@@ -429,6 +476,8 @@ Retrieves a deferred session by its ID.
 ---
 
 ### File Domain Methods
+
+---
 
 #### `uploadFile()` Method
 
@@ -459,6 +508,8 @@ Uploads a local file to Alfred.
   | `mimetype`  | string | File mimetype |
   | `size`      | number | File size |
   | `metadata`  | any | File metadata |
+
+---
 
 #### `upload()` Method
 
@@ -501,6 +552,8 @@ Uploads a file from a remote source to Alfred.
 
 ### Job Domain Methods
 
+---
+
 #### `create()` Method
 
 ***Signature***
@@ -536,6 +589,8 @@ Creates a new job in Alfred.
 | Key         | Type | Description            |
 |-------------| --- |------------------------|
 | `jobId`     | string | ID of the created Job. |
+
+---
 
 #### `get()` Method
 
@@ -596,6 +651,8 @@ Retrieves a job by its ID.
 
 ### Data Points Domain Methods
 
+---
+
 #### `getValues()` Method
 
 ***Signature***
@@ -624,6 +681,8 @@ Retrieves the data points of a file by its ID.
 ---
 
 ### Account Domain Methods
+
+---
 
 #### `whoAmI()` Method
 
