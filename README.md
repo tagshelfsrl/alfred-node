@@ -381,9 +381,9 @@ Each domain provides access to a set of methods that interact with the Alfred AP
 
 ---
 
-#### Session Domain Methods
+### Session Domain Methods
 
-##### -  `create()` Method
+#### -  `create()` Method
 
 ***Signature***
 
@@ -403,7 +403,7 @@ Creates a new deferred session in Alfred.
 | `id`        | string | Session ID |
 | `createdAt` | string | Session creation date |
 
-##### -  `get()` Method
+#### -  `get()` Method
 
 ***Signature***
 
@@ -428,9 +428,9 @@ Retrieves a deferred session by its ID.
 
 ---
 
-#### File Domain Methods
+### File Domain Methods
 
-##### `uploadFile()` Method
+#### `uploadFile()` Method
 
 ***Signature***
 
@@ -460,7 +460,7 @@ Uploads a local file to Alfred.
   | `size`      | number | File size |
   | `metadata`  | any | File metadata |
 
-##### `upload()` Method
+#### `upload()` Method
 
 ***Signature***
 
@@ -499,9 +499,9 @@ Uploads a file from a remote source to Alfred.
 
 ---
 
-#### Job Domain Methods
+### Job Domain Methods
 
-##### `create()` Method
+#### `create()` Method
 
 ***Signature***
 
@@ -537,7 +537,7 @@ Creates a new job in Alfred.
 |-------------| --- |------------------------|
 | `jobId`     | string | ID of the created Job. |
 
-##### `get()` Method
+#### `get()` Method
 
 ***Signature***
     
@@ -594,9 +594,9 @@ Retrieves a job by its ID.
 
 ---
 
-#### Data Points Domain Methods
+### Data Points Domain Methods
 
-##### `getValues()` Method
+#### `getValues()` Method
 
 ***Signature***
 
@@ -623,9 +623,9 @@ Retrieves the data points of a file by its ID.
 
 ---
 
-#### Account Domain Methods
+### Account Domain Methods
 
-##### `whoAmI()` Method
+#### `whoAmI()` Method
 
 ***Signature***
 
