@@ -6,12 +6,12 @@ import { toCamelCase } from "../utils/convert-case";
 import { EventName } from "../config/constants";
 import { castProps, DataType } from "../utils/cast";
 
-export class AlfredSocketClient {
+export class AlfredRealTimeClient {
   private socket: Socket;
 
   constructor(config: ClientConfiguration, apiKey: string) {
-    // Connect to socket server and provide API key
-    this.socket = io(config.socketURL, { query: { apiKey } });
+    // Connect to realtime server and provide API key
+    this.socket = io(config.realTimeURL, { query: { apiKey } });
 
     // Handle connection error
     this.socket.on("connect_error", (err) => {
@@ -22,9 +22,9 @@ export class AlfredSocketClient {
 
   /**
    * Registers a callback function to be executed when a specific event is
-   * emitted on a socket connection.
+   * emitted on a realtime connection.
    * @param {string} event - A string that represents the event name that the
-   * socket is listening for. When this event is triggered, the callback
+   * realtime is listening for. When this event is triggered, the callback
    * function provided will be executed with the data associated with the event.
    * @param callback - A function that will get executed when new events are emitted.
    */
@@ -58,7 +58,7 @@ export class AlfredSocketClient {
   /**
    * Registers a callback to handle the specified event.
    * @param {string} event - A string that represents the event name that the
-   * socket is listening for.
+   * realtime is listening for.
    * @param callback - A function that takes a `JobEvent` object and handles it.
    */
   on(event: string, callback: (data: any) => void | Promise<void>) {
@@ -66,7 +66,7 @@ export class AlfredSocketClient {
   }
 
   /**
-   * Closes the socket connection.
+   * Closes the realtime connection.
    */
   disconnect() {
     this.socket.close();
