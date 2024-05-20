@@ -1,4 +1,4 @@
-import { AlfredSocketClient, Configuration } from "../../src";
+import { AlfredRealTimeClient, Configuration } from "../../src";
 import { io } from "socket.io-client";
 import {
   __simulateAuthFailure,
@@ -10,21 +10,21 @@ import {
 jest.mock("socket.io-client");
 
 const config = Configuration.v1("staging", {
-  socketURL: "http://localhost:5000",
+  realTimeClient: "http://localhost:5000",
 });
 const apiKey = "AXXXXXXXX";
 
-describe("socket: alfred socket client", () => {
+describe("realtime: alfred realtime client", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("should successfully connect to socket server", () => {
+  it("should successfully connect to realtime server", () => {
     __simulateAuthSuccess();
-    const _ = new AlfredSocketClient(config, apiKey);
+    const _ = new AlfredRealTimeClient(config, apiKey);
 
     expect(io).toHaveBeenCalledWith(
-      config.socketURL,
+      config.realTimeURL,
       expect.objectContaining({ query: { apiKey } })
     );
     expect(socket.close).not.toHaveBeenCalled();
@@ -33,7 +33,7 @@ describe("socket: alfred socket client", () => {
   it("should disconnect on invalid API key", (done) => {
     __simulateAuthFailure();
     try {
-      const _ = new AlfredSocketClient(config, "");
+      const _ = new AlfredRealTimeClient(config, "");
     } catch (error) {
       expect(socket.close).toHaveBeenCalled();
       done();
@@ -43,7 +43,7 @@ describe("socket: alfred socket client", () => {
   it("should get job event", () => {
     __simulateAuthSuccess();
     let data = {};
-    const client = new AlfredSocketClient(config, apiKey);
+    const client = new AlfredRealTimeClient(config, apiKey);
     const handler = jest.fn((_data) => (data = _data));
     client.onJobEvent(handler);
 
@@ -57,7 +57,7 @@ describe("socket: alfred socket client", () => {
   it("should get file event", () => {
     __simulateAuthSuccess();
     let data = {};
-    const client = new AlfredSocketClient(config, apiKey);
+    const client = new AlfredRealTimeClient(config, apiKey);
     const handler = jest.fn((_data) => (data = _data));
     client.onFileEvent(handler);
 
@@ -71,7 +71,7 @@ describe("socket: alfred socket client", () => {
   it("should get any event", () => {
     __simulateAuthSuccess();
     let data = {};
-    const client = new AlfredSocketClient(config, apiKey);
+    const client = new AlfredRealTimeClient(config, apiKey);
     const handler = jest.fn((_data) => (data = _data));
     client.on("mesage", handler);
 

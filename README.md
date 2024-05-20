@@ -324,14 +324,14 @@ The `alfred-node` library provides a way to listen to events emitted by Alfred I
 
 ### Getting started
 
-To get started, you need to create an instance of the AlfredSocketClient class.
+To get started, you need to create an instance of the AlfredRealTimeClient class.
 
 ```js
-import { Configuration, AlfredSocketClient } from "./src";
+import { Configuration, AlfredRealTimeClient } from "./src";
 
-const socketClient = new AlfredSocketClient(
-  Configuration.default("staging"),
-  "AXXXXXXXXXXXXXXXXX"
+const realTimeClient = new AlfredRealTimeClient(
+        Configuration.default("staging"),
+        "AXXXXXXXXXXXXXXXXX"
 );
 ```
 
@@ -340,7 +340,7 @@ const socketClient = new AlfredSocketClient(
 These events are specifically designed to respond to a variety of actions or status changes related to Files. To see more details about File events, visit our [official documentation](https://docs.tagshelf.dev/event-api/fileevents).
 
 ```js
-socketClient.onFileEvent((data) => console.log(data));
+realTimeClient.onFileEvent((data) => console.log(data));
 ```
 
 #### Job event
@@ -348,7 +348,7 @@ socketClient.onFileEvent((data) => console.log(data));
 Alfred performs asynchronous document classification, extraction, and indexing on a variety of file types. The events detailed here offer insights into how a Job progresses, fails, retries, or completes its tasks. To see more details about Job events, visit our [official documentation](https://docs.tagshelf.dev/event-api/jobevents).
 
 ```js
-socketClient.onJobEvent((data) => console.log(data));
+realTimeClient.onJobEvent((data) => console.log(data));
 
 ```
 
@@ -357,7 +357,7 @@ socketClient.onJobEvent((data) => console.log(data));
 This enables you to select the specific event you wish to monitor. It's particularly beneficial when new events are introduced that have not yet received official support within the library.
 
 ```js
-socketClient.on("custom-event", (data) => console.log(data));
+realTimeClient.on("custom-event", (data) => console.log(data));
 ```
 
 #### Disconnect
@@ -365,7 +365,7 @@ socketClient.on("custom-event", (data) => console.log(data));
 This method disconnects the socket.
 
 ```js
-socketClient.disconnect();
+realTimeClient.disconnect();
 ```
 
 # Reference

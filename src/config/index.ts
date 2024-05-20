@@ -2,14 +2,14 @@ import { Environment } from "./types";
 
 export interface ClientConfiguration {
   baseURL: string;
-  socketURL: string;
+  realTimeURL: string;
   version: number;
   environment: Environment;
 }
 
 export interface ClientConfigurationOverrides {
   baseURL?: string;
-  socketURL?: string;
+  realTimeClient?: string;
 }
 
 export class Configuration {
@@ -26,7 +26,7 @@ export class Configuration {
         baseURL: overrides?.baseURL
           ? overrides.baseURL
           : "https://staging.tagshelf.com",
-        socketURL: overrides?.socketURL ? overrides.socketURL : "",
+        realTimeURL: overrides?.realTimeClient ? overrides.realTimeClient : "",
         version: 1,
         environment: "staging",
       };
@@ -36,7 +36,7 @@ export class Configuration {
       baseURL: overrides?.baseURL
         ? overrides.baseURL
         : "https://app.tagshelf.com",
-      socketURL: overrides?.socketURL ? overrides.socketURL : "",
+      realTimeURL: overrides?.realTimeClient ? overrides.realTimeClient : "",
       version: 1,
       environment: "production",
     };
