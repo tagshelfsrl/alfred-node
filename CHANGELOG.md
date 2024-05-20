@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.2](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.1...v1.1.2) (2024-05-20)
+
+
+### Bug Fixes
+
+* add comprehensive docs on how to authenticate, upload files and use the realtime engine. ([#37](https://github.com/tagshelfsrl/alfred-node/issues/37)) ([57031c7](https://github.com/tagshelfsrl/alfred-node/commit/57031c7786637dfbb7ae9b00c03fd43759ea9e99))
+* release-please-action org name was renamed and updates accordingly ([#39](https://github.com/tagshelfsrl/alfred-node/issues/39)) ([da9af3d](https://github.com/tagshelfsrl/alfred-node/commit/da9af3ddbc24758c84ba35e94fe98d56d907ec69))
+* rename alfred-socket-client to alfred-realtime-client and all related variables ([#38](https://github.com/tagshelfsrl/alfred-node/issues/38)) ([6ccba36](https://github.com/tagshelfsrl/alfred-node/commit/6ccba36802501643324b7b4676c97d448b562a6c))
+* trigger build release ([af1e06e](https://github.com/tagshelfsrl/alfred-node/commit/af1e06e154d6249482069e33b546cd97d5785c22))
+
 ## [1.1.1](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.0...v1.1.1) (2024-05-01)
 
 
