@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   test:
     name: Test
@@ -31,9 +35,6 @@ jobs:
   release:
     needs: [test]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
