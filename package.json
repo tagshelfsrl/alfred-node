@@ -1,6 +1,6 @@
 {
   "name": "@tagshelf/alfred",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "TypeScript/Node library for seamless integration with Alfred's Intelligent Process Automation platform.",
   "main": "lib/index.js",
   "files": [
