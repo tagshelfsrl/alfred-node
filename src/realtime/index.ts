@@ -1,10 +1,10 @@
 import { io, Socket } from "socket.io-client";
 
 import { ClientConfiguration } from "../config";
-import { JobEvent, FileEvent } from "./types";
 import { toCamelCase } from "../utils/convert-case";
 import { EventName } from "../config/constants";
 import { castProps, DataType } from "../utils/cast";
+import { FileEvent, JobEvent } from "./types";
 
 export class AlfredRealTimeClient {
   private socket: Socket;
