@@ -9,7 +9,7 @@ export interface ClientConfiguration {
 
 export interface ClientConfigurationOverrides {
   baseURL?: string;
-  realTimeClient?: string;
+  realTimeURL?: string;
 }
 
 export class Configuration {
@@ -26,7 +26,9 @@ export class Configuration {
         baseURL: overrides?.baseURL
           ? overrides.baseURL
           : "https://staging.tagshelf.com",
-        realTimeURL: overrides?.realTimeClient ? overrides.realTimeClient : "",
+        realTimeURL: overrides?.realTimeURL
+          ? overrides.realTimeURL
+          : "https://sockets.tagshelf.dev",
         version: 1,
         environment: "staging",
       };
@@ -36,7 +38,9 @@ export class Configuration {
       baseURL: overrides?.baseURL
         ? overrides.baseURL
         : "https://app.tagshelf.com",
-      realTimeURL: overrides?.realTimeClient ? overrides.realTimeClient : "",
+      realTimeURL: overrides?.realTimeURL
+        ? overrides.realTimeURL
+        : "https://sockets.tagshelf.io",
       version: 1,
       environment: "production",
     };
