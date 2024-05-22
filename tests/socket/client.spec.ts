@@ -10,7 +10,7 @@ import {
 jest.mock("socket.io-client");
 
 const config = Configuration.v1("staging", {
-  realTimeClient: "http://localhost:5000",
+  realTimeURL: "http://localhost:5000",
 });
 const apiKey = "AXXXXXXXX";
 
