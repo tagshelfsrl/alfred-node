@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.3](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.2...v1.1.3) (2024-05-23)
+
+
+### Bug Fixes
+
+* move realtime types out of typescript declaration files.  ([#41](https://github.com/tagshelfsrl/alfred-node/issues/41)) ([5573223](https://github.com/tagshelfsrl/alfred-node/commit/557322304334ea5cb1e178b6fe4c0a3c7f162883))
+* rename configuration override and set default urls for realtime ([#42](https://github.com/tagshelfsrl/alfred-node/issues/42)) ([d2c0f4e](https://github.com/tagshelfsrl/alfred-node/commit/d2c0f4e658e8d6092eb6bc26c55598b69345e9d1))
+
 ## [1.1.2](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.1...v1.1.2) (2024-05-20)
 
 
