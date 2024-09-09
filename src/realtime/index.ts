@@ -51,8 +51,8 @@ export class AlfredRealTimeClient {
    * Registers a callback to handle job events.
    * @param callback - A function that takes a `JobEvent` object and handles it.
    */
-  onJobEvent(callback: (data: JobEvent) => void | Promise<void>) {
-    this._callback<JobEvent>(EventName.JobEvent, callback);
+  onJobEvent(callback: (data: JobEvent["event"]) => void | Promise<void>) {
+    this._callback<JobEvent["event"]>(EventName.JobEvent, callback);
   }
 
   /**
