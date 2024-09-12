@@ -2,7 +2,7 @@ import { io, Socket } from "socket.io-client";
 import { toCamelCase } from "../utils/convert-case";
 import { castProps, DataType } from "../utils/cast";
 import { ClientConfiguration } from "../config";
-import { EventName } from "../config/constants";
+import { EventType } from "../config/constants";
 import { FileEvent, JobEvent } from "./types";
 import { AlfredEvent } from "../enums";
 
@@ -44,7 +44,7 @@ export class AlfredRealTimeClient {
    * @param callback - A function that takes a `FileEvent` object and handles it.
    */
   onFileEvent(callback: (data: FileEvent) => void | Promise<void>) {
-    this._callback<FileEvent>(EventName.FileEvent, callback);
+    this._callback<FileEvent>(EventType.FileEvent, callback);
   }
 
   /**
@@ -52,7 +52,7 @@ export class AlfredRealTimeClient {
    * @param callback - A function that takes a `JobEvent` object and handles it.
    */
   onJobEvent(callback: (data: JobEvent) => void | Promise<void>) {
-    this._callback<JobEvent>(EventName.JobEvent, callback);
+    this._callback<JobEvent>(EventType.JobEvent, callback);
   }
 
   /**
