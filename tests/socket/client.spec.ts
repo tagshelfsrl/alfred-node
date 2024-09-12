@@ -5,6 +5,7 @@ import {
   __simulateAuthSuccess,
   socket,
 } from "../__mocks__/socket.io-client";
+import { AlfredEvent } from "../../src/enums";
 
 // Mock Socket IO client library
 jest.mock("socket.io-client");
@@ -68,12 +69,12 @@ describe("realtime: alfred realtime client", () => {
     expect(data).toHaveProperty("eventType");
   });
 
-  it("should get any event", () => {
+  it("should get a job create event", () => {
     __simulateAuthSuccess();
     let data = {};
     const client = new AlfredRealTimeClient(config, apiKey);
     const handler = jest.fn((_data) => (data = _data));
-    client.on("mesage", handler);
+    client.on(AlfredEvent.JobCreate, handler);
 
     expect(handler).toHaveBeenCalled();
     expect(data).toHaveProperty("event");
