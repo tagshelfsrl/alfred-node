@@ -1,21 +1,22 @@
 import { CompanyInfo, Timestamps, EventProperties } from "./base";
+import { AlfredEvent } from "../../../enums";
 
 // Job events
-type JobStartEvent = CompanyInfo &
+export type JobStartEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_job_start";
+    eventName: AlfredEvent.JobStart;
     jobId: string;
   };
 
-type JobFinishedEvent = CompanyInfo &
+export type JobFinishedEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_job_finished";
+    eventName: AlfredEvent.JobFinished;
     jobId: string;
   };
 
-type JobCreateEvent = CompanyInfo &
+export type JobCreateEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_job_create";
+    eventName: AlfredEvent.JobCreate;
     jobId: string;
     userName: string;
     merge: boolean;
@@ -23,16 +24,16 @@ type JobCreateEvent = CompanyInfo &
     fileCount: number;
   };
 
-type JobStageUpdateEvent = CompanyInfo &
+export type JobStageUpdateEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_job_stage_update";
+    eventName: AlfredEvent.JobStageUpdate;
     jobId: string;
     stage: string;
   };
 
-type JobExceededRetriesEvent = CompanyInfo &
+export type JobExceededRetriesEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_job_exceeded_retries";
+    eventName: AlfredEvent.JobExceededRetries;
     jobId: string;
     userName: string;
     merge: boolean;
@@ -42,25 +43,25 @@ type JobExceededRetriesEvent = CompanyInfo &
     exceededRetries: boolean;
   };
 
-type JobFailedEvent = CompanyInfo &
+export type JobFailedEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_job_failed";
+    eventName: AlfredEvent.JobFailed;
     jobId: string;
     retries: number;
     exceededRetries: boolean;
   };
 
-type JobInvalidEvent = CompanyInfo &
+export type JobInvalidEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_job_invalid";
+    eventName: AlfredEvent.JobInvalid;
     jobId: string;
     retries: number;
     exceededRetries: boolean;
   };
 
-type JobRetryEvent = CompanyInfo &
+export type JobRetryEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_job_retry";
+    eventName: AlfredEvent.JobRetry;
     jobId: string;
     userName: string;
     merge: boolean;
@@ -71,14 +72,14 @@ type JobRetryEvent = CompanyInfo &
   };
 
 // Job and file event types
-type JobEventType =
-  | { eventType: "job_event"; event: JobStartEvent }
-  | { eventType: "job_event"; event: JobFinishedEvent }
-  | { eventType: "job_event"; event: JobCreateEvent }
-  | { eventType: "job_event"; event: JobStageUpdateEvent }
-  | { eventType: "jov_event"; event: JobExceededRetriesEvent }
-  | { eventType: "jov_event"; event: JobFailedEvent }
-  | { eventType: "jov_event"; event: JobInvalidEvent }
-  | { eventType: "jov_event"; event: JobRetryEvent };
+export type JobEventType =
+  | JobStartEvent
+  | JobFinishedEvent
+  | JobCreateEvent
+  | JobStageUpdateEvent
+  | JobExceededRetriesEvent
+  | JobFailedEvent
+  | JobInvalidEvent
+  | JobRetryEvent;
 
 export type JobEvent = EventProperties & JobEventType;

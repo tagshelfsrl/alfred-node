@@ -1,9 +1,10 @@
 import { CompanyInfo, Timestamps, EventProperties } from "./base";
+import { AlfredEvent } from "../../../enums";
 
 // File events
 type FileStatusUpdateEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_status_update";
+    eventName: AlfredEvent.FileStatusUpdate;
     blobName: string;
     blobUrl: string;
     fileId: string;
@@ -16,7 +17,7 @@ type FileStatusUpdateEvent = CompanyInfo &
 
 type FileMoveEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_move";
+    eventName: AlfredEvent.FileMove;
     blobName: string;
     blobUrl: string;
     fileId: string;
@@ -28,7 +29,7 @@ type FileMoveEvent = CompanyInfo &
 
 type FileDoneEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_done";
+    eventName: AlfredEvent.FileDone;
     blobName: string;
     blobUrl: string;
     fileId: string;
@@ -39,14 +40,14 @@ type FileDoneEvent = CompanyInfo &
 
 type FileAddToJobEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_add_to_job";
+    eventName: AlfredEvent.FileAddToJob;
     fileId: string;
     jobId: string;
   };
 
 type FileCategoryCreateEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_category_create";
+    eventName: AlfredEvent.FileCategoryCreate;
     fileLogId: string;
     description: any;
     confidence: number;
@@ -54,14 +55,14 @@ type FileCategoryCreateEvent = CompanyInfo &
 
 type FileCategoryDeleteEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_category_delete";
+    eventName: AlfredEvent.FileCategoryDelete;
     fileLogId: string;
     description: any;
     confidence: number;
   };
 
 type FileChangeTagEvent = CompanyInfo & {
-  eventName: "alfred_event_file_change_tag";
+  eventName: AlfredEvent.FileChangeTag;
   fileId: string;
   previousTagId: string;
   previousTagName: any;
@@ -73,7 +74,7 @@ type FileChangeTagEvent = CompanyInfo & {
 
 type FileExtractedDataCreateEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_extracted_data_create";
+    eventName: AlfredEvent.FileExtractedDataCreate;
     fileLogId: string;
     content: any;
     provider: string;
@@ -81,7 +82,7 @@ type FileExtractedDataCreateEvent = CompanyInfo &
 
 type FileExtractedDataDeleteEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_extracted_data_delete";
+    eventName: AlfredEvent.FileExtractedDataDelete;
     fileLogId: string;
     content: any;
     provider: string;
@@ -89,7 +90,7 @@ type FileExtractedDataDeleteEvent = CompanyInfo &
 
 type FileFailedEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_failed";
+    eventName: AlfredEvent.FileFailed;
     fileId: string;
     blobName: string;
     bloUrl: string;
@@ -102,7 +103,7 @@ type FileFailedEvent = CompanyInfo &
 
 type FileMoveToPendingEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_move_to_pending";
+    eventName: AlfredEvent.FileMoveToPending;
     fileId: string;
     fileName: string;
     fileNameWithoutExtension: string;
@@ -112,7 +113,7 @@ type FileMoveToPendingEvent = CompanyInfo &
 
 type FileMoveToRecycleBinEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_move_to_recycle_bin";
+    eventName: AlfredEvent.FileMoveToRecycleBin;
     fileId: string;
     fileName: string;
     fileNameWithoutExtension: string;
@@ -122,7 +123,7 @@ type FileMoveToRecycleBinEvent = CompanyInfo &
 
 type FilePropertyCreateEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_property_create";
+    eventName: AlfredEvent.FilePropertyCreate;
     fileLogId: string;
     name: string;
     value: any;
@@ -130,14 +131,14 @@ type FilePropertyCreateEvent = CompanyInfo &
 
 type FilePropertyDeleteEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_property_delete";
+    eventName: AlfredEvent.FilePropertyDelete;
     fileLogId: string;
     name: string;
     value: any;
   };
 
 type FileRemoveTagEvent = CompanyInfo & {
-  eventName: "alfred_event_file_remove_tag";
+  eventName: AlfredEvent.FileRemoveTag;
   fileId: string;
   tagBeingRemovedId: string;
   tagBeingRemovedName: string;
@@ -146,7 +147,7 @@ type FileRemoveTagEvent = CompanyInfo & {
 
 type FileUpdateEvent = CompanyInfo &
   Timestamps & {
-    eventName: "alfred_event_file_update";
+    eventName: AlfredEvent.FileUpdate;
     fileId: string;
     fileLogId: string;
     fileName: string;
@@ -156,21 +157,21 @@ type FileUpdateEvent = CompanyInfo &
   };
 
 type FileEventType =
-  | { eventType: "file_event"; event: FileStatusUpdateEvent }
-  | { eventType: "file_event"; event: FileMoveEvent }
-  | { eventType: "file_event"; event: FileDoneEvent }
-  | { eventType: "file_event"; event: FileUpdateEvent }
-  | { eventType: "file_event"; event: FileRemoveTagEvent }
-  | { eventType: "file_event"; event: FilePropertyDeleteEvent }
-  | { eventType: "file_event"; event: FilePropertyCreateEvent }
-  | { eventType: "file_event"; event: FileMoveToRecycleBinEvent }
-  | { eventType: "file_event"; event: FileMoveToPendingEvent }
-  | { eventType: "file_event"; event: FileFailedEvent }
-  | { eventType: "file_event"; event: FileExtractedDataDeleteEvent }
-  | { eventType: "file_event"; event: FileExtractedDataCreateEvent }
-  | { eventType: "file_event"; event: FileChangeTagEvent }
-  | { eventType: "file_event"; event: FileCategoryDeleteEvent }
-  | { eventType: "file_event"; event: FileAddToJobEvent }
-  | { eventType: "file_event"; event: FileCategoryCreateEvent };
+  | FileStatusUpdateEvent
+  | FileMoveEvent
+  | FileDoneEvent
+  | FileUpdateEvent
+  | FileRemoveTagEvent
+  | FilePropertyDeleteEvent
+  | FilePropertyCreateEvent
+  | FileMoveToRecycleBinEvent
+  | FileMoveToPendingEvent
+  | FileFailedEvent
+  | FileExtractedDataDeleteEvent
+  | FileExtractedDataCreateEvent
+  | FileChangeTagEvent
+  | FileCategoryDeleteEvent
+  | FileAddToJobEvent
+  | FileCategoryCreateEvent;
 
 export type FileEvent = EventProperties & FileEventType;
