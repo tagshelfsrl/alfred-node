@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.3...v1.1.4) (2024-09-12)
+
+
+### Bug Fixes
+
+* typing issues and add modular structure for job and file event definition. ([#45](https://github.com/tagshelfsrl/alfred-node/issues/45)) ([5be06f6](https://github.com/tagshelfsrl/alfred-node/commit/5be06f684f0e9b010ff288e38a794ec4c2a18096))
+
 ## [1.1.3](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.2...v1.1.3) (2024-05-23)
 
 
