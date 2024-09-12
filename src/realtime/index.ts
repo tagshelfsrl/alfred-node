@@ -1,10 +1,10 @@
 import { io, Socket } from "socket.io-client";
-
-import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
-import { EventName } from "../config/constants";
 import { castProps, DataType } from "../utils/cast";
+import { ClientConfiguration } from "../config";
+import { EventType } from "../config/constants";
 import { FileEvent, JobEvent } from "./types";
+import { AlfredEvent } from "../enums";
 
 export class AlfredRealTimeClient {
   private socket: Socket;
@@ -44,7 +44,7 @@ export class AlfredRealTimeClient {
    * @param callback - A function that takes a `FileEvent` object and handles it.
    */
   onFileEvent(callback: (data: FileEvent) => void | Promise<void>) {
-    this._callback<FileEvent>(EventName.FileEvent, callback);
+    this._callback<FileEvent>(EventType.FileEvent, callback);
   }
 
   /**
@@ -52,17 +52,17 @@ export class AlfredRealTimeClient {
    * @param callback - A function that takes a `JobEvent` object and handles it.
    */
   onJobEvent(callback: (data: JobEvent) => void | Promise<void>) {
-    this._callback<JobEvent>(EventName.JobEvent, callback);
+    this._callback<JobEvent>(EventType.JobEvent, callback);
   }
 
   /**
    * Registers a callback to handle the specified event.
-   * @param {string} event - A string that represents the event name that the
+   * @param {string} eventName - A string that represents the event name that the
    * realtime is listening for.
    * @param callback - A function that takes a `JobEvent` object and handles it.
    */
-  on(event: string, callback: (data: any) => void | Promise<void>) {
-    this._callback(event, callback);
+  on<T>(eventName: AlfredEvent, callback: (data: T) => void | Promise<void>) {
+    this._callback<T>(eventName, callback);
   }
 
   /**

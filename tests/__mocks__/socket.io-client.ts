@@ -1,4 +1,4 @@
-import { EventName } from "../../src/config/constants";
+import { EventType } from "../../src/config/constants";
 import { mockFileEvent, mockJobEvent } from "../mock-utils";
 
 let mockFailAuth = false;
@@ -7,9 +7,9 @@ export const socket = {
   on: jest.fn((event, callback) => {
     if (event === "connect_error") {
       if (mockFailAuth) callback(new Error("Authentication failed"));
-    } else if (event === EventName.JobEvent) {
+    } else if (event === EventType.JobEvent) {
       callback(mockJobEvent());
-    } else if (event === EventName.FileEvent) {
+    } else if (event === EventType.FileEvent) {
       callback(mockFileEvent());
     } else {
       callback(mockFileEvent());
