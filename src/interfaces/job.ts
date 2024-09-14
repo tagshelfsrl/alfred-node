@@ -10,7 +10,7 @@ export interface JobResult {
   updateDate: string;
   companyId: string;
   bulkId?: string;
-  deferredSessionId: string;
+  deferredSessionId?: string;
   userName: string;
   channel: string;
   source?: string;
@@ -22,29 +22,34 @@ export interface JobResult {
   propagateMetadata: boolean;
   parentFilePrefix?: string;
   decomposedPageRotation: number;
+  metadata: any;
   fileCount: number;
   fileSourcesCount: number;
   metadataObjectsCount: number;
   finishedFiles: number;
-  files: {
-    id: string;
-    creationDate: string;
-    updateDate: string;
-    fileName: string;
-    tagName: string;
-    isParent: boolean;
-    isChildren: boolean;
-    status: string;
-  }[];
+  files: FileItem[];
   retries: number;
   exceededRetries: boolean;
   fileUrls: string[];
   errorMessages: string[];
   stage: string;
+  priority: number;
+  inputSourceType: number;
   startDate: string;
   emailFrom?: string;
   emailSubject?: string;
   emailBody?: string;
+}
+
+interface FileItem {
+  id: string;
+  creationDate: string;
+  updateDate: string;
+  fileName: string;
+  tagName: string;
+  isParent: boolean;
+  isChildren: boolean;
+  status: string;
 }
 
 export interface CreateJob {
