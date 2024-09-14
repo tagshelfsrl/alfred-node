@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.6](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.5...v1.1.6) (2024-09-14)
+
+
+### Bug Fixes
+
+* update job result typings. ([#50](https://github.com/tagshelfsrl/alfred-node/issues/50)) ([997a97c](https://github.com/tagshelfsrl/alfred-node/commit/997a97c310838582e291a204cc7292b45f1f1826))
+
 ## [1.1.5](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.4...v1.1.5) (2024-09-13)
 
 
