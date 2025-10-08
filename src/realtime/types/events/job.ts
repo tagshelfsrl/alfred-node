@@ -57,6 +57,7 @@ export type JobInvalidEvent = CompanyInfo &
     jobId: string;
     retries: number;
     exceededRetries: boolean;
+    hasBrokenInputSources: boolean;
   };
 
 export type JobRetryEvent = CompanyInfo &
