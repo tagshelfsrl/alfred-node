@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.7](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.6...v1.1.7) (2025-10-10)
+
+
+### Bug Fixes
+
+* add hasBrokenInputSources property to JobInvalidEvent ([#53](https://github.com/tagshelfsrl/alfred-node/issues/53)) ([d28d011](https://github.com/tagshelfsrl/alfred-node/commit/d28d011d10479f280f06bd141731d9cfe97ce44f))
+
 ## [1.1.6](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.5...v1.1.6) (2024-09-14)
 
 
