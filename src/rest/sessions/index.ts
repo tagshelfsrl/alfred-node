@@ -7,7 +7,7 @@ export class Sessions {
   /**
    * Creates a new session for uploding files.
    */
-  async create() {
+  async create(): Promise<CreateSessionResult> {
     const resp = await this.client._http.post<CreateSessionResult>(
       "/api/deferred/create"
     );
@@ -17,7 +17,7 @@ export class Sessions {
   /**
    * Returns a session by ID.
    */
-  async get(sessionId: string) {
+  async get(sessionId: string): Promise<GetSessionResult> {
     const resp = await this.client._http.get<GetSessionResult>(
       `/api/deferred/detail/${sessionId}`
     );

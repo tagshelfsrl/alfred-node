@@ -4,7 +4,7 @@ export class Accounts {
   constructor(private client: AlfredClient) {}
 
   /**
-   * Returns basic information about user/appliication
+   * Returns basic information about user/application
    * authenticated.
    */
   async whoAmI() {
