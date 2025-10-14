@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.8](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.7...v1.1.8) (2025-10-14)
+
+
+### Bug Fixes
+
+* correct typo in documentation and add missing return types for session methods ([7df6147](https://github.com/tagshelfsrl/alfred-node/commit/7df61473d3b81e2efe1885e84149d1653deb6e23))
+* correct typo in documentation and add missing return types for session methods ([d55583a](https://github.com/tagshelfsrl/alfred-node/commit/d55583a534f50b0398b482b946bcdfbb32c79726))
+
 ## [1.1.7](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.6...v1.1.7) (2025-10-10)
 
 
