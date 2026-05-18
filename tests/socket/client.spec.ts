@@ -1,6 +1,9 @@
 import { AlfredRealTimeClient, Configuration } from "../../src";
 import { io } from "socket.io-client";
 import {
+  __emitManagerEvent,
+  __emitSocketEvent,
+  __resetSocketMock,
   __simulateAuthFailure,
   __simulateAuthSuccess,
   socket,
@@ -18,6 +21,7 @@ const apiKey = "AXXXXXXXX";
 describe("realtime: alfred realtime client", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    __resetSocketMock();
   });
 
   it("should successfully connect to realtime server", () => {
@@ -31,14 +35,14 @@ describe("realtime: alfred realtime client", () => {
     expect(socket.close).not.toHaveBeenCalled();
   });
 
-  it("should disconnect on invalid API key", (done) => {
+  it("should keep the socket open on connection errors", () => {
     __simulateAuthFailure();
-    try {
-      const _ = new AlfredRealTimeClient(config, "");
-    } catch (error) {
-      expect(socket.close).toHaveBeenCalled();
-      done();
-    }
+    const client = new AlfredRealTimeClient(config, "");
+    const handler = jest.fn();
+
+    client.onConnectError(handler);
+
+    expect(socket.close).not.toHaveBeenCalled();
   });
 
   it("should get job event", () => {
@@ -81,5 +85,52 @@ describe("realtime: alfred realtime client", () => {
     expect(data).toHaveProperty("eventId");
     expect(data).toHaveProperty("eventTime");
     expect(data).toHaveProperty("eventType", "file_event");
+  });
+
+  it("should wait until the socket connects", async () => {
+    const client = new AlfredRealTimeClient(config, apiKey);
+    const readiness = client.waitUntilConnected(1000);
+
+    __emitSocketEvent("connect");
+
+    await expect(readiness).resolves.toBeUndefined();
+  });
+
+  it("should time out while waiting for the socket connection", async () => {
+    jest.useFakeTimers();
+    const client = new AlfredRealTimeClient(config, apiKey);
+    const readiness = client.waitUntilConnected(1000);
+
+    jest.advanceTimersByTime(1000);
+
+    await expect(readiness).rejects.toThrow("Realtime connection timed out after 1000ms");
+    jest.useRealTimers();
+  });
+
+  it("should expose realtime lifecycle callbacks", () => {
+    const client = new AlfredRealTimeClient(config, apiKey);
+    const onConnect = jest.fn();
+    const onDisconnect = jest.fn();
+    const onConnectError = jest.fn();
+    const onReconnectAttempt = jest.fn();
+    const onReconnect = jest.fn();
+
+    client.onConnect(onConnect);
+    client.onDisconnect(onDisconnect);
+    client.onConnectError(onConnectError);
+    client.onReconnectAttempt(onReconnectAttempt);
+    client.onReconnect(onReconnect);
+
+    __emitSocketEvent("connect");
+    __emitSocketEvent("disconnect");
+    __emitSocketEvent("connect_error", new Error("boom"));
+    __emitManagerEvent("reconnect_attempt");
+    __emitManagerEvent("reconnect");
+
+    expect(onConnect).toHaveBeenCalled();
+    expect(onDisconnect).toHaveBeenCalled();
+    expect(onConnectError).toHaveBeenCalledWith(expect.any(Error));
+    expect(onReconnectAttempt).toHaveBeenCalled();
+    expect(onReconnect).toHaveBeenCalled();
   });
 });

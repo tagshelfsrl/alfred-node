@@ -6,18 +6,15 @@ import { EventType } from "../config/constants";
 import { FileEvent, JobEvent } from "./types";
 import { AlfredEvent } from "../enums";
 
+export type RealtimeErrorHandler = (error: Error) => void;
+export type RealtimeEventHandler = () => void;
+
 export class AlfredRealTimeClient {
   private socket: Socket;
 
   constructor(config: ClientConfiguration, apiKey: string) {
     // Connect to realtime server and provide API key
     this.socket = io(config.realTimeURL, { query: { apiKey } });
-
-    // Handle connection error
-    this.socket.on("connect_error", (err) => {
-      this.disconnect();
-      throw err;
-    });
   }
 
   /**
@@ -63,6 +60,46 @@ export class AlfredRealTimeClient {
    */
   on<T>(eventName: AlfredEvent, callback: (data: T) => void | Promise<void>) {
     this._callback<T>(eventName, callback);
+  }
+
+  onConnect(callback: RealtimeEventHandler) {
+    this.socket.on("connect", callback);
+  }
+
+  onDisconnect(callback: RealtimeEventHandler) {
+    this.socket.on("disconnect", callback);
+  }
+
+  onConnectError(callback: RealtimeErrorHandler) {
+    this.socket.on("connect_error", callback);
+  }
+
+  onReconnectAttempt(callback: RealtimeEventHandler) {
+    this.socket.io.on("reconnect_attempt", callback);
+  }
+
+  onReconnect(callback: RealtimeEventHandler) {
+    this.socket.io.on("reconnect", callback);
+  }
+
+  waitUntilConnected(timeoutMs: number): Promise<void> {
+    if (this.socket.connected) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.socket.off("connect", handleConnect);
+        reject(new Error(`Realtime connection timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      const handleConnect = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+
+      this.socket.once("connect", handleConnect);
+    });
   }
 
   /**
