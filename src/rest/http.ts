@@ -105,10 +105,13 @@ export function timeoutFor(
  * Whether a failed request may be sent again: only reads, and only for failures that are
  * likely to be temporary.
  */
-export function isRetryable(err: unknown): boolean {
-  if (!isAxiosError(err) || !err.config) return false;
+export function isRetryable(
+  err: AxiosError,
+  config: InternalAxiosRequestConfig
+): boolean {
   if (err.code === AxiosError.ERR_CANCELED) return false;
-  if ((err.config.method ?? "get").toLowerCase() !== "get") return false;
+  // axios has already lower-cased the method and defaulted it to "get"
+  if (config.method !== "get") return false;
   if (!err.response) return true;
   return RETRYABLE_STATUSES.includes(err.response.status);
 }
@@ -152,17 +155,13 @@ export function toAlfredError(err: unknown): AlfredError {
       );
 
     const code = err.code;
-    const target = [method, url?.split(/[?#]/)[0]].filter(Boolean).join(" ");
+    const target = ["Request", method, url?.split(/[?#]/)[0]]
+      .filter(Boolean)
+      .join(" ");
     const details = { method, url, code };
     if (code && TIMEOUT_CODES.includes(code))
-      return new TimeoutError(
-        `Request ${target} timed out: ${err.message}`,
-        details
-      );
-    return new RequestError(
-      `Request ${target} failed: ${err.message}`,
-      details
-    );
+      return new TimeoutError(`${target} timed out: ${err.message}`, details);
+    return new RequestError(`${target} failed: ${err.message}`, details);
   }
 
   const message = err instanceof Error ? err.message : String(err);

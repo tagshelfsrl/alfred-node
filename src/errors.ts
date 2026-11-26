@@ -262,7 +262,8 @@ export function parseRetryAfter(
 
   if (/^\d+(\.\d+)?$/.test(value)) return Number(value);
 
-  const date = Date.parse(value);
+  // An HTTP date always names its month; this keeps values such as "-5" from parsing as a year
+  const date = /[a-z]/i.test(value) ? Date.parse(value) : NaN;
   if (isNaN(date)) return undefined;
   return Math.max(0, Math.ceil((date - now) / 1000));
 }
@@ -327,8 +328,8 @@ export function createHTTPError(
 
   if (error instanceof PayloadTooLargeError && isObject(data)) {
     const maxBytes = data.max_bytes ?? data.maxBytes;
-    if (maxBytes !== null && maxBytes !== "" && !isNaN(Number(maxBytes)))
-      error.maxBytes = Number(maxBytes);
+    if (typeof maxBytes === "number" && isFinite(maxBytes))
+      error.maxBytes = maxBytes;
   }
 
   if (error instanceof RateLimitError || error instanceof ServerError) {

@@ -286,7 +286,7 @@ export class AlfredClient {
 
       // Retry reads that failed for a temporary reason
       const attempt = config._retryCount ?? 0;
-      if (attempt < this.transport.maxRetries && isRetryable(err)) {
+      if (attempt < this.transport.maxRetries && isRetryable(err, config)) {
         config._retryCount = attempt + 1;
         await this._sleep(retryDelay(err, attempt));
         return this._http(config);
