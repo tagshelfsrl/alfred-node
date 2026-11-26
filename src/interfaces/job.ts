@@ -32,6 +32,16 @@ export type JobStage =
  */
 export type JobPriority = "low" | "normal" | "high" | "urgent" | (string & {});
 
+/**
+ * Job priority as the full view sends it: the same four values, capitalised.
+ */
+export type JobFullPriority =
+  | "Low"
+  | "Normal"
+  | "High"
+  | "Urgent"
+  | (string & {});
+
 /** Processing status of a file. Future values are accepted as plain strings. */
 export type JobFileStatus =
   | "uploaded"
@@ -211,7 +221,7 @@ export interface JobFull {
   /** Source URLs found to be unavailable. */
   unavailableSourceUrls?: string[];
   /** Job priority, capitalised in this view (for example "Normal"). */
-  priority: JobPriority;
+  priority: JobFullPriority;
   startDate?: string;
   hasFailedFiles: boolean;
   /** True when some input sources can no longer be read. */
