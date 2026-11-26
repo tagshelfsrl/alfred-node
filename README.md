@@ -484,10 +484,65 @@ const dataPoints: DataPointResult[] = await client.dataPoints.getValues(fileId);
 
 // Process extracted data points
 dataPoints.forEach((dataPoint) => {
-    console.log(`${dataPoint.metadataName}: ${dataPoint.value}`);
+    console.log(`${dataPoint.fieldKey}: ${dataPoint.value}`);
     console.log(`Confidence: ${dataPoint.classificationScore}`);
 });
 ```
+
+Each row carries these fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | string | Value ID |
+| `fileLogId` | string | File log ID |
+| `metadataId` | string | ID of the data point definition |
+| `metadataName` | string | Display label. It can be renamed, so do not key an integration on it |
+| `fieldKey` | string | Stable machine key of the data point (for example `invoice_number`). Key your integration on this |
+| `value` | string | Final value, after formatting rules. `""` when nothing was found |
+| `classificationScore` | number | Confidence from 0 to 1 |
+| `extractedValue` | string (optional) | The extractor's original output. Present only when formatting rules changed it; when absent, `value` is the original |
+| `normalizedValue` | string (optional) | Value after type normalization. In practice on every row, `""` when there is no value |
+| `validation` | object (optional) | Recorded result of the validation rules, present only when validation ran for this value |
+
+### Found or not found
+
+A data point that was not found in the document is still returned, with `value: ""` and `classificationScore: 0`.
+A found value has a non-empty `value`.
+
+```typescript
+const found = dataPoints.filter((dp) => dp.value !== "");
+const notFound = dataPoints.filter((dp) => dp.value === "" && dp.classificationScore === 0);
+```
+
+### Validation results
+
+When validation ran, `validation` is normally an object with a `status` (`"passed"`, `"failed"` or `"skipped"`) and
+one entry per rule in `results`. Each result has `passed`, `skipped`, `severity` (`0` info, `1` warning, `2` error),
+`blocksCompletion` and an optional `message`. An older stored form is a bare array of result items, and text Alfred
+could not parse arrives as a plain string, so check the shape before reading it.
+
+```typescript
+import { DataPointValidation } from "@tagshelf/alfred";
+
+for (const dp of dataPoints) {
+    const v = dp.validation;
+    if (!v || typeof v === "string") continue;
+    const results = Array.isArray(v) ? v : (v as DataPointValidation).results;
+    for (const r of results.filter((r) => !r.passed && !r.skipped)) {
+        console.log(`${dp.fieldKey}: ${r.message ?? r.validatorId} (severity ${r.severity})`);
+    }
+}
+```
+
+The SDK converts response keys to camelCase by lowercasing the first letter of each key. Keys inside a result's
+`metadata` object that are written in capitals (for example `URL`) therefore come back as `uRL`; treat those keys as
+opaque.
+
+### Wait for the file to finish
+
+A file that has not finished processing answers **404**, not an empty list. A file whose document type has no data
+points also answers 404. Wait for the file to finish (for example with the file-done event of the real-time client, or
+by checking the job's status) before asking for values.
 
 ## Real-Time Events
 
@@ -1050,14 +1105,24 @@ Retrieves the data points of a file by its ID.
 - `fileId: string`: The ID of the file to retrieve data points from.
 
 ***Returns***
-- A Promise that resolves to an object of type `DataPointResult[]` with the following properties:
-- | Key       | Type | Description |
-  |-----------| --- | --- |
--  |`id`        | string | Data point ID |
+- A Promise that resolves to `DataPointResult[]` (also exported as `DataPointValue[]`), one row per data point:
+
+  | Key | Type | Description |
+  | --- | --- | --- |
+  | `id` | string | Value ID |
   | `fileLogId` | string | File log ID |
-  | `metadataId` | string | Metadata ID |
-- | `metadataName` | string | Metadata name |
-  | `classificationScore` | number | Classification score |
+  | `metadataId` | string | ID of the data point definition |
+  | `metadataName` | string | Display label; can be renamed |
+  | `fieldKey` | string | Stable machine key; key integrations on this |
+  | `value` | string | Final value after formatting rules; `""` when not found |
+  | `classificationScore` | number | Confidence from 0 to 1; `0` when not found |
+  | `extractedValue` | string (optional) | Extractor's original output; present only when formatting changed it |
+  | `normalizedValue` | string (optional) | Value after type normalization; `""` when there is no value |
+  | `validation` | `DataPointValidation` \| `DataPointValidationResult[]` \| string (optional) | Recorded validation result; present only when validation ran |
+
+***Errors***
+- 404: the file has not finished processing, or its document type has no data points.
+- 401: the file belongs to another workspace.
 
 ---
 
