@@ -17,6 +17,7 @@ import {
   createHTTPError,
   extractErrorMessage,
   parseRetryAfter,
+  stripQuery,
 } from "../../src/errors";
 
 describe("errors: class hierarchy", () => {
@@ -248,5 +249,125 @@ describe("errors: extractErrorMessage", () => {
     const message = extractErrorMessage("x".repeat(1000), 500);
     expect(message.length).toBe(300);
     expect(message.endsWith("...")).toBe(true);
+  });
+});
+
+describe("errors: helpers and edge cases", () => {
+  it("should strip query strings and fragments, and pass through a missing url", () => {
+    expect(stripQuery("api/a?b=1")).toBe("api/a");
+    expect(stripQuery("api/a#top")).toBe("api/a");
+    expect(stripQuery("api/a")).toBe("api/a");
+    expect(stripQuery(undefined)).toBeUndefined();
+  });
+
+  it("should keep text that only looks like JSON", () => {
+    expect(extractErrorMessage("{not json", 500)).toBe("{not json");
+    const err = createHTTPError(500, "", "[oops", {}, "GET", "u");
+    expect(err.data).toBe("[oops");
+  });
+
+  it("should ignore non-string entries of errors", () => {
+    expect(extractErrorMessage({ errors: [1, "", "Real."] }, 400)).toBe(
+      "Real."
+    );
+    expect(extractErrorMessage({ errors: [1, null] }, 400)).toBe(
+      "400 Bad Request"
+    );
+    const err = createHTTPError(400, "", { errors: ["A.", 2] }, {}, "", "");
+    expect(err.errors).toEqual(["A."]);
+  });
+
+  it("should skip non-string message fields and an error object without message", () => {
+    expect(
+      extractErrorMessage(
+        { message: 42, error: { code: "x" }, detail: "Fallback." },
+        400
+      )
+    ).toBe("Fallback.");
+    expect(extractErrorMessage({ error: { message: " " } }, 400)).toBe(
+      "400 Bad Request"
+    );
+    expect(extractErrorMessage(["a list"], 400)).toBe("400 Bad Request");
+    expect(extractErrorMessage(12, 400)).toBe("400 Bad Request");
+  });
+
+  it("should fall back to the bare status for unknown codes", () => {
+    expect(extractErrorMessage("", 599)).toBe("599");
+  });
+
+  it("should read Retry-After from headers with and without a get method", () => {
+    const withGet = new AxiosHeaders({ "Retry-After": "4" });
+    expect(typeof (withGet as any).get).toBe("function");
+    expect(parseRetryAfter(withGet)).toBe(4);
+    expect(parseRetryAfter(new AxiosHeaders({}))).toBeUndefined();
+    expect(parseRetryAfter({ "RETRY-AFTER": "2.5" })).toBe(2.5);
+    expect(parseRetryAfter({ "retry-after": ["6", "7"] })).toBe(6);
+    expect(parseRetryAfter({ "retry-after": null })).toBeUndefined();
+    expect(parseRetryAfter({ "retry-after": "  " })).toBeUndefined();
+    expect(parseRetryAfter({ "retry-after": "-5" })).toBeUndefined();
+  });
+
+  it("should treat missing or non-object headers as no Retry-After", () => {
+    expect(parseRetryAfter(undefined)).toBeUndefined();
+    expect(parseRetryAfter(null)).toBeUndefined();
+    expect(parseRetryAfter("Retry-After: 5")).toBeUndefined();
+  });
+
+  it("should only set retryAfter from a valid header", () => {
+    const invalid = createHTTPError(
+      503,
+      "",
+      "",
+      { "Retry-After": "soon" },
+      "GET",
+      "u"
+    ) as ServerError;
+    expect(invalid.retryAfter).toBeUndefined();
+    expect("retryAfter" in invalid).toBe(false);
+    const missing = createHTTPError(429, "", "", undefined, "GET", "u");
+    expect((missing as RateLimitError).retryAfter).toBeUndefined();
+    const notRetryable = createHTTPError(
+      404,
+      "",
+      "",
+      { "Retry-After": "5" },
+      "GET",
+      "u"
+    );
+    expect((notRetryable as any).retryAfter).toBeUndefined();
+  });
+
+  it("should only set maxBytes from a numeric field", () => {
+    const camel = createHTTPError(413, "", { maxBytes: 10 }, {}, "", "");
+    expect((camel as PayloadTooLargeError).maxBytes).toBe(10);
+    for (const body of [
+      { max_bytes: "abc" },
+      { max_bytes: "100" },
+      { max_bytes: null },
+      {},
+      "Too large",
+    ]) {
+      const err = createHTTPError(413, "", body, {}, "", "");
+      expect((err as PayloadTooLargeError).maxBytes).toBeUndefined();
+    }
+  });
+
+  it("should read correlationId only when it is a non-empty string", () => {
+    expect(
+      createHTTPError(500, "", { correlationId: "ABC" }, {}, "", "")
+        .correlationId
+    ).toBe("ABC");
+    expect(
+      createHTTPError(500, "", { correlation_id: "" }, {}, "", "").correlationId
+    ).toBeUndefined();
+    expect(
+      createHTTPError(409, "", { reason: 5 }, {}, "", "").reason
+    ).toBeUndefined();
+  });
+
+  it("should default url and method when they are missing", () => {
+    const err = createHTTPError(404, "Not Found", "", {});
+    expect(err.url).toBe("");
+    expect(err.method).toBeUndefined();
   });
 });

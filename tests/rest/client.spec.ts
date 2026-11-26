@@ -244,6 +244,9 @@ describe("rest: typed errors", () => {
     expect(err).toBeInstanceOf(RequestError);
     expect(err).not.toBeInstanceOf(TimeoutError);
     expect(err.code).toBe("ECONNRESET");
+    expect(err.message).toBe(
+      "Request GET api/job/detail/1 failed: connect ECONNRESET 10.0.0.1:443"
+    );
     expect(err.method).toBe("GET");
     expect(err.url).toBe("api/job/detail/1");
   });
@@ -259,6 +262,9 @@ describe("rest: typed errors", () => {
       expect(err).toBeInstanceOf(TimeoutError);
       expect(err).toBeInstanceOf(RequestError);
       expect(err.code).toBe(code);
+      expect(err.message).toBe(
+        "Request GET api/job/detail/1 timed out: timeout of 60000ms exceeded"
+      );
     }
   );
 
@@ -478,6 +484,62 @@ describe("rest: oauth", () => {
     expect(err.message).toBe("401 Unauthorized");
   });
 
+  it("should retry a 401 only once, even for a GET", async () => {
+    const client = oauthClient();
+    const calls = stubAdapter(client, (cfg) =>
+      cfg.url === "/token"
+        ? { data: { access_token: ACCESS_TOKEN } }
+        : { status: 401 }
+    );
+    await catchError(client.jobs.get("1"));
+    expect(calls.filter((c) => c.url === "/token")).toHaveLength(2);
+    expect(calls.filter((c) => c.url !== "/token")).toHaveLength(2);
+    expect(client._sleep).not.toHaveBeenCalled();
+  });
+
+  it("should not refresh the token on 401 with an API key", async () => {
+    const { client } = newClient();
+    const calls = stubAdapter(client, () => ({ status: 401 }));
+    const err = await catchError(client.jobs.get("1"));
+    expect(err).toBeInstanceOf(AuthenticationError);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("should reuse the token for later calls", async () => {
+    const client = oauthClient();
+    const calls = stubAdapter(client, (cfg) =>
+      cfg.url === "/token"
+        ? { data: { access_token: ACCESS_TOKEN } }
+        : { data: {} }
+    );
+    await client.jobs.get("1");
+    await client.jobs.get("2");
+    expect(calls.filter((c) => c.url === "/token")).toHaveLength(1);
+  });
+
+  it("should reject an empty token answer", async () => {
+    const client = oauthClient();
+    stubAdapter(client, (cfg) =>
+      cfg.url === "/token" ? { data: "" } : { data: {} }
+    );
+    const err = await catchError(client.jobs.get("1"));
+    expect(err).toBeInstanceOf(ConfigurationError);
+    expect(err.message).toBe(
+      "Alfred did not return an access token for the username and password."
+    );
+  });
+
+  it("should pass through errors that are not HTTP errors from /token", async () => {
+    const client = oauthClient();
+    stubAdapter(client, (cfg) => {
+      if (cfg.url === "/token") throw networkError(cfg, "ECONNRESET");
+      return { data: {} };
+    });
+    const err = await catchError(client.jobs.get("1"));
+    expect(err).toBeInstanceOf(RequestError);
+    expect(err.url).toBe("/token");
+  });
+
   it("should include the server's error_description when credentials are refused", async () => {
     const client = oauthClient();
     stubAdapter(client, (cfg) =>
@@ -518,4 +580,118 @@ describe("rest: oauth", () => {
     expect(err).toBeInstanceOf(ConfigurationError);
     expect(calls.filter((c) => c.url !== "/token")).toHaveLength(0);
   });
+});
+
+describe("rest: construction", () => {
+  const saved = process.env.ALFRED_API_KEY;
+  beforeEach(() => delete process.env.ALFRED_API_KEY);
+  afterAll(() => {
+    if (saved !== undefined) process.env.ALFRED_API_KEY = saved;
+  });
+
+  it("should reject a client without credentials", () => {
+    expect(() => new AlfredClient(config, {})).toThrow(
+      new ConfigurationError(
+        "You must provide at least one valid authorization property."
+      )
+    );
+  });
+
+  it("should accept HMAC credentials", () => {
+    expect(
+      () =>
+        new AlfredClient(config, {
+          hmac: { apiKey: "a2V5", secretKey: "secret" },
+        })
+    ).not.toThrow();
+  });
+});
+
+describe("rest: other failures", () => {
+  it("should not retry a cancelled request", async () => {
+    const { client, sleep } = newClient();
+    const calls = stubAdapter(client, () => ({ data: {} }));
+    const controller = new AbortController();
+    controller.abort();
+    const err = await catchError(
+      client._http.get("api/job/detail/1", { signal: controller.signal })
+    );
+    expect(err).toBeInstanceOf(RequestError);
+    expect(err.code).toBe("ERR_CANCELED");
+    expect(calls).toHaveLength(0);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  it("should wrap an Error thrown before the request is sent", async () => {
+    const { client } = newClient();
+    stubAdapter(client, () => ({ data: {} }));
+    client._http.interceptors.request.use(() => {
+      throw new Error("bad input");
+    });
+    const err = await catchError(client.jobs.get("1"));
+    expect(err).toBeInstanceOf(RequestError);
+    expect(err.message).toBe("Request failed: bad input");
+  });
+
+  it("should wrap a thrown value that is not an Error", async () => {
+    const { client } = newClient();
+    stubAdapter(client, () => ({ data: {} }));
+    client._http.interceptors.request.use(() => {
+      throw "plain string";
+    });
+    const err = await catchError(client.jobs.get("1"));
+    expect(err).toBeInstanceOf(RequestError);
+    expect(err.message).toBe("Request failed: plain string");
+  });
+
+  it("should wrap an axios error that carries no request config", async () => {
+    const { client, sleep } = newClient();
+    stubAdapter(client, () => {
+      throw new AxiosError("socket hang up", "ECONNRESET");
+    });
+    const err = await catchError(client.jobs.get("1"));
+    expect(err).toBeInstanceOf(RequestError);
+    expect(err.message).toBe("Request failed: socket hang up");
+    expect(err.method).toBeUndefined();
+    expect(err.url).toBeUndefined();
+    expect(sleep).not.toHaveBeenCalled();
+  });
+});
+
+describe("rest: file transfer detection", () => {
+  it("should treat a standard FormData body as a file transfer", async () => {
+    const { client } = newClient();
+    const calls = stubAdapter(client, () => ({ data: {} }));
+    const form = new FormData();
+    form.append("session_id", "s");
+    await client._http.post("api/file/uploadfile", form);
+    expect(calls[0].timeout).toBeFalsy();
+  });
+
+  it("should detect form-data uploads where FormData is not defined", async () => {
+    const original = (globalThis as any).FormData;
+    (globalThis as any).FormData = undefined;
+    try {
+      const { client } = newClient();
+      const calls = stubAdapter(client, () => ({ data: { file_id: "f" } }));
+      await client.files.uploadFile(uploadPayload);
+      await client._http.post("api/job/create", { a: 1 });
+      expect(calls[0].timeout).toBeFalsy();
+      expect(calls[1].timeout).toBe(60000);
+    } finally {
+      (globalThis as any).FormData = original;
+    }
+  });
+
+  it.each(["stream", "blob"])(
+    "should treat a %s response as a file transfer",
+    async (responseType) => {
+      const { client } = newClient();
+      const calls = stubAdapter(client, () => ({ data: "" }));
+      await client._http.get("api/file/download/f", {
+        responseType: responseType as any,
+      });
+      expect(calls[0].timeout).toBeFalsy();
+    }
+  );
 });
