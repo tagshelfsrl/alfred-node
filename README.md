@@ -42,6 +42,10 @@
     - [Job Domain Methods](#job-domain-methods)
       - [`create()` Method](#create-method)
       - [`get()` Method](#get-method)
+      - [`getAll()` Method](#getall-method)
+      - [`cancel()` Method](#cancel-method)
+      - [`restart()` Method](#restart-method)
+      - [`checkSources()` Method](#checksources-method)
     - [Data Points Domain Methods](#data-points-domain-methods)
       - [`getValues()` Method](#getvalues-method)
     - [Account Domain Methods](#account-domain-methods)
@@ -400,6 +404,24 @@ const decomposeJob: CreateJob = {
 await client.jobs.create(decomposeJob);
 ```
 
+**Correlation id, password and priority**
+
+```typescript
+const trackedJob: CreateJob = {
+    sessionId: session.sessionId,
+    correlationId: "order-42", // your own reference, up to 512 characters
+    password: "s3cret", // for password-protected PDF, zip or Office files
+    priority: "high", // "low" | "normal" | "high" | "urgent"
+};
+
+const { jobId, correlationId } = await client.jobs.create(trackedJob);
+console.log(jobId, correlationId); // correlationId is "" when you sent none
+```
+
+- `correlationId` is opaque and case-sensitive, is never deduplicated (two jobs can share one), and is trimmed to at most 512 characters. You can later find the job with `client.jobs.getAll({ correlationId })`.
+- `password` is refused with HTTP 400 where the feature is not enabled.
+- `priority` can be overridden by a workspace-level setting, which wins over the value you send.
+
 
 ## Get Job Information
 
@@ -407,21 +429,97 @@ Once you've triggered a Job, you can get its information by providing the job ID
 This way you can check the stage or status of the job processing so you can access to its results.
 For more information about the job stages please visit the Job section of our [official documentation](https://docs.tagshelf.dev/enpoints/job).
 
+Since Alfred 1.130.0, `client.jobs.get(id)` returns a short **summary** of the job. The collections `files`, `metadata`, `fileUrls` and `errorMessages` are only part of the **full** view, which you ask for with `{ view: "full" }`. The full view is available to API keys and Account Admins; anyone else gets HTTP 403.
+
 ```typescript
-import { AlfredClient, Configuration, JobResult } from "@tagshelf/alfred";
+import { AlfredClient, Configuration, JobSummary, JobFull } from "@tagshelf/alfred";
 
 // ... Initialization code here ...
 
-// Get job by ID
 const jobId = "12345678-1234-1234-1234-123456789abc";
-const jobInfo: JobResult = await client.jobs.get(jobId);
 
-console.log("Job stage:", jobInfo.stage);
-console.log("File count:", jobInfo.fileCount);
-console.log("Finished files:", jobInfo.finishedFiles);
-console.log("Job metadata:", jobInfo.metadata);
-console.log("Job files:", jobInfo.files);
+// Summary (default)
+const summary: JobSummary = await client.jobs.get(jobId);
+console.log("Job stage:", summary.stage);
+console.log("File count:", summary.fileCount);
+console.log("Finished files:", summary.finishedFiles);
+console.log("Failed files:", summary.failedFilesCount);
+
+// Full view
+const full: JobFull = await client.jobs.get(jobId, { view: "full" });
+console.log("Job metadata:", full.metadata); // a JSON string, "" when none
+console.log("Job files:", full.files);
+
+// Full view without the heavy collections
+const light = await client.jobs.get(jobId, {
+    view: "full",
+    exclude: ["files", "fileUrls"], // or "files,fileUrls"
+});
 ```
+
+**Upgrading from an earlier version**
+
+```typescript
+// Before: returned the full record
+const job = await client.jobs.get(jobId);
+console.log(job.files, job.metadata);
+
+// After: ask for the full view when you need those fields
+const job = await client.jobs.get(jobId, { view: "full" });
+console.log(job.files, job.metadata);
+```
+
+`JobResult` is still exported as an alias of `JobFull` and is deprecated.
+
+Note that the summary's `priority` is lowercase (`"high"`), while the full view's is capitalised (`"High"`).
+
+### List Jobs
+
+`client.jobs.getAll()` returns one page of jobs. Use `hasMore` to walk through all pages.
+
+```typescript
+let page = 1;
+while (true) {
+    const result = await client.jobs.getAll({ page, pageSize: 50 });
+    for (const job of result.items) {
+        console.log(job.id, job.stage);
+    }
+    if (!result.hasMore) break;
+    page++;
+}
+```
+
+Filters and rules:
+
+- `page` starts at 1 and `pageSize` must be between 10 and 100.
+- `sortDirection`: `"ASC"` or `"DESC"`. By default the most recently updated jobs come first.
+- `startDate` and `endDate` are calendar days (`"YYYY-MM-DD"`, or a `Date`, sent as its UTC date). An end date needs a start date, and future dates are not allowed.
+- `correlationId` matches exactly and is case-sensitive.
+- `channel` filters by channel.
+- `view: "full"` returns full records, without `files`, `fileUrls` and `errorMessages`.
+
+```typescript
+const result = await client.jobs.getAll({
+    startDate: "2026-11-01",
+    endDate: "2026-11-25",
+    correlationId: "order-42",
+    sortDirection: "ASC",
+});
+```
+
+### Cancel, Restart and Check Sources
+
+```typescript
+const { canceled } = await client.jobs.cancel(jobId);
+
+// Restart; pass redownloadRemoteFiles to fetch remote files again
+const { restarted } = await client.jobs.restart(jobId, { redownloadRemoteFiles: true });
+
+// Check that remote sources can still be downloaded
+const { available, unavailableUrls } = await client.jobs.checkSources(jobId);
+```
+
+If Alfred refuses a restart (for example because sources are missing) the call throws an `HTTPError` (HTTP 409 or 400) whose body explains the reason.
 
 ## Get File Information
 
@@ -963,6 +1061,9 @@ Creates a new job in Alfred.
 | `container`       | string | Virtual container where the referenced remote file is located.|
 | `filename`        | string | Unique name of the file within an object storage source.|
 | `filenames`       | string[] | Array of unique names of the files within an object storage source.|
+| `correlationId`   | string | Your own reference for the job. Opaque, case-sensitive, at most 512 characters after trimming, never deduplicated. |
+| `password`        | string | Password for protected PDF, zip or Office files. Refused with HTTP 400 where the feature is off. |
+| `priority`        | `"low"` \| `"normal"` \| `"high"` \| `"urgent"` | Job priority. A workspace-level override, when configured, wins. |
 
 ***Returns***
 - A Promise that resolves to an object of type `CreateJobResult` with the following properties:
@@ -970,63 +1071,184 @@ Creates a new job in Alfred.
 | Key         | Type | Description            |
 |-------------| --- |------------------------|
 | `jobId`     | string | ID of the created Job. |
+| `correlationId` | string | The correlation id you sent; `""` when none. |
 
 ---
 
 #### `get()` Method
 
 ***Signature***
-    
+
 ```typescript
-get(id: string): Promise<JobResult>;
+get(id: string): Promise<JobSummary>;
+get(id: string, options: { view: "full"; exclude?: JobExcludableField[] | string }): Promise<JobFull>;
+get(id: string, options?: GetJobOptions): Promise<JobSummary | JobFull>;
 ```
 
 ***Description***
 
-Retrieves a job by its ID.
+Retrieves a job by its ID. Since Alfred 1.130.0 the default answer is the summary. `files`, `metadata`, `fileUrls` and `errorMessages` need `{ view: "full" }`, which is available to API keys and Account Admins (anyone else gets HTTP 403). The summary's `priority` is lowercase (`"high"`), the full view's is capitalised (`"High"`).
 
 ***Parameters***
-- `id`: The ID of the job to retrieve.
+- `id`: The ID of the job to retrieve. Throws `Error("jobId is required.")` when blank.
+- `options` (optional):
+
+| Key | Type | Description |
+| --- | --- | --- |
+| `view` | `"summary"` \| `"full"` | Nothing is sent when omitted, so the API default (summary) applies. |
+| `exclude` | array or comma-separated string | Any of `files`, `metadata`, `fileUrls`, `errorMessages`. Only meaningful with the full view; `metadata` then arrives as `""`. |
 
 ***Returns***
-- A Promise that resolves to an object of type `JobResult` with the following properties:
+- A Promise that resolves to a `JobSummary` (default) or a `JobFull` (`view: "full"`).
 
+`JobSummary`:
 
 | Key | Type | Description |
 | --- | --- | --- |
 | `id` | string | Job ID |
-| `creationDate` | string | Job creation date |
-| `hasJobRequestInfo` | boolean | Indicates if the job has request information |
-| `jobRequestDate` | string (optional) | Job request date |
-| `updateDate` | string | Job update date |
-| `companyId` | string | Company ID |
-| `bulkId` | string (optional) | Bulk ID |
-| `deferredSessionId` | string | Deferred session ID |
-| `userName` | string | User name |
+| `correlationId` | string | Your reference; `""` when none |
+| `stage` | string | Job stage, for example `completed` |
 | `channel` | string | Channel |
-| `source` | string (optional) | Source |
-| `container` | string (optional) | Container |
-| `remoteFileName` | string (optional) | Remote file name |
-| `remoteFileNames` | string (optional) | Remote file names |
+| `priority` | string | Lowercase priority |
+| `userName` | string | User that created the job |
+| `fileSourcesCount` | number | File sources in the job |
+| `fileCount` | number | Files in the job |
+| `finishedFiles` | number | Finished files |
+| `hasFailedFiles` | boolean | At least one file failed |
+| `failedFilesCount` | number | Failed files |
+| `hasConfirmationRequiredFiles` | boolean | At least one file waits for confirmation |
+| `confirmationRequiredFilesCount` | number | Files waiting for confirmation |
+| `retries` | number | Number of retries |
+| `exceededRetries` | boolean | Retries were exceeded |
 | `merge` | boolean | Merge flag |
 | `decompose` | boolean | Decompose flag |
 | `propagateMetadata` | boolean | Propagate metadata flag |
-| `parentFilePrefix` | string (optional) | Parent file prefix |
-| `decomposedPageRotation` | number | Decomposed page rotation |
+| `creationDate` | string | Creation date (ISO 8601, UTC) |
+| `updateDate` | string | Last update date |
+| `startDate` | string (optional) | Start date; left out until the job starts |
+
+`JobFull`:
+
+| Key | Type | Description |
+| --- | --- | --- |
+| `id` | string | Job ID |
+| `cancellationReason` | string | Why the job was canceled |
+| `lastCanceledBy` | string | User that last canceled the job |
+| `lastCancellationDate` | string (optional) | When it was last canceled |
+| `companyId` | string | Company ID |
+| `bulkId` | string (optional) | Bulk ID |
+| `deferredSessionId` | string (optional) | Deferred session ID |
+| `userName` | string | User name |
+| `channel` | string | Channel |
+| `correlationId` | string | Your reference; `""` when none |
+| `source` | string | Source |
+| `container` | string | Container |
+| `remoteFileName` | string | Remote file name |
+| `merge` | boolean | Merge flag |
+| `decompose` | boolean | Decompose flag |
+| `propagateMetadata` | boolean | Propagate metadata flag |
+| `parentFilePrefix` | string | Parent file prefix |
+| `metadata` | string | Job metadata as a JSON string, exactly as sent by the API; `""` when none |
 | `fileCount` | number | File count |
+| `totalFileCount` | number | File count including split files |
 | `fileSourcesCount` | number | File sources count |
 | `metadataObjectsCount` | number | Metadata objects count |
 | `finishedFiles` | number | Finished files count |
-| `files` | object array | Array of file objects, each containing `id`, `creationDate`, `updateDate`, `fileName`, `tagName`, `isParent`, `isChildren`, `status` |
+| `files` | `JobFile[]` (optional) | Files, see below |
 | `retries` | number | Number of retries |
-| `exceededRetries` | boolean | Flag indicating if retries were exceeded |
-| `fileUrls` | string array | Array of file URLs |
-| `errorMessages` | string array | Array of error messages |
+| `cancelCount`, `restartCount`, `cachedRestartCount`, `redownloadRestartCount` | number | How often the job was canceled and restarted |
+| `restartedBy` | string | User that last restarted the job |
+| `restartedAt` | string (optional) | When it was last restarted |
+| `exceededRetries` | boolean | Retries were exceeded |
+| `fileUrls` | string[] (optional) | File URLs |
+| `errorMessages` | string[] (optional) | Error messages |
 | `stage` | string | Job stage |
-| `startDate` | string | Job start date |
-| `emailFrom` | string (optional) | Email from |
-| `emailSubject` | string (optional) | Email subject |
-| `emailBody` | string (optional) | Email body |
+| `remoteSourcesAvailable` | boolean (optional) | Result of the last source check |
+| `unavailableSourceUrls` | string[] (optional) | Source URLs found unavailable |
+| `priority` | string | Capitalised priority, for example `Normal` |
+| `startDate` | string (optional) | Start date |
+| `hasFailedFiles` | boolean | At least one file failed |
+| `hasBrokenInputSources` | boolean | Some input sources cannot be read |
+| `creationDate` | string | Creation date |
+| `updateDate` | string | Update date |
+
+`JobFile`: `id`, `creationDate`, `updateDate`, `fileName`, `contentType`, `tagName`, `isParent`, `isChildren`, `groupRole` (`standalone`, `virtual` or `member`), `groupId?`, `parentId?`, `isProcessingUnit` (the file is classified and extracted in its own right, not a split parent or a page of a grouped document), `isResultReady` (an automated result exists and can be read; review may still be pending), `status` and `isReextracting`.
+
+---
+
+#### `getAll()` Method
+
+***Signature***
+
+```typescript
+getAll(options?: ListJobsOptions): Promise<JobPage<JobSummary>>;
+getAll(options: ListJobsOptions & { view: "full" }): Promise<JobPage<JobFull>>;
+```
+
+***Description***
+
+Lists jobs one page at a time. Both spellings of the paging parameters are sent, so the call also works against Alfred versions before 1.130.0, and their older `{ result, total, isEmpty }` answer is converted to the same page shape.
+
+***Parameters***
+- `options` (optional):
+
+| Key | Type | Description |
+| --- | --- | --- |
+| `page` | number | Page number, from 1 |
+| `pageSize` | number | Items per page, 10 to 100 |
+| `sortDirection` | `"ASC"` \| `"DESC"` | Sort by update date; newest first by default |
+| `startDate` | string \| Date | First day (`YYYY-MM-DD`); a `Date` is sent as its UTC date |
+| `endDate` | string \| Date | Last day; needs a start date; no future dates |
+| `correlationId` | string | Exact, case-sensitive match |
+| `channel` | string | Channel filter |
+| `view` | `"summary"` \| `"full"` | Full records come without `files`, `fileUrls` and `errorMessages` |
+
+***Returns***
+- A Promise that resolves to a `JobPage` with `items`, `page`, `pageSize`, `total` and `hasMore`.
+
+---
+
+#### `cancel()` Method
+
+***Signature***
+
+```typescript
+cancel(jobId: string): Promise<CancelJobResult>;
+```
+
+***Description***
+
+Cancels a job. Resolves to `{ canceled: boolean }`.
+
+---
+
+#### `restart()` Method
+
+***Signature***
+
+```typescript
+restart(jobId: string, options?: { redownloadRemoteFiles?: boolean }): Promise<RestartJobResult>;
+```
+
+***Description***
+
+Restarts a job. Resolves to `{ restarted: boolean }`. `redownloadRemoteFiles` defaults to `false`. A refusal from Alfred (HTTP 409 when sources are missing, HTTP 400 for other reasons) is thrown as an `HTTPError` whose body has `refused`, `reason` and `message`.
+
+---
+
+#### `checkSources()` Method
+
+***Signature***
+
+```typescript
+checkSources(jobId: string): Promise<CheckJobSourcesResult>;
+```
+
+***Description***
+
+Checks whether the remote sources of a job can still be downloaded. Resolves to `{ available: boolean, unavailableUrls?: string[] }`; an unknown job is an HTTP 404.
+
+All methods that take a job ID throw `Error("jobId is required.")`, before any request, when it is missing or blank.
 
 ---
 
