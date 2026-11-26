@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
 
 import { Jobs } from "./jobs";
@@ -174,7 +175,9 @@ export class AlfredClient {
         secretKey,
         config.method as string,
         url,
-        body
+        body,
+        crypto.randomUUID(),
+        Math.floor(Date.now() / 1000)
       );
 
       return config;

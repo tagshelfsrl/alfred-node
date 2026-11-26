@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import FormData from "form-data";
+import { Readable } from "stream";
 
 import { AlfredClient, Configuration } from "../../src";
 
@@ -192,4 +193,89 @@ describe("rest: hmac request signing", () => {
     expect(Number(p.timestamp)).toBeLessThanOrEqual(before + 5);
     expect(captured[0].headers.Authorization).not.toContain(API_KEY);
   });
+
+  describe("body forms", () => {
+    const url = `${BASE}/api/x`;
+
+    async function send(data: any, dropContentType = false) {
+      const { client, captured } = makeClient();
+      if (dropContentType) {
+        // Registered last, so it runs before the HMAC interceptor
+        client._http.interceptors.request.use((c: any) => {
+          c.headers.delete("Content-Type");
+          return c;
+        });
+      }
+      await client._http.post("api/x", data);
+      return captured[0];
+    }
+
+    it("signs a Buffer body", async () => {
+      const bytes = Buffer.from([1, 2, 3, 250]);
+      const cfg = await send(bytes);
+      expect(Buffer.from(cfg.data).equals(bytes)).toBe(true);
+      check(cfg, "POST", url, Buffer.from(cfg.data));
+    });
+
+    it("signs a Uint8Array that is a view into a larger buffer", async () => {
+      const backing = new Uint8Array([9, 9, 1, 2, 3, 9]);
+      const view = backing.subarray(2, 5);
+      const cfg = await send(view);
+      expect(Buffer.from(cfg.data).equals(Buffer.from([1, 2, 3]))).toBe(true);
+      check(cfg, "POST", url, Buffer.from(cfg.data));
+    });
+
+    it("signs an ArrayBuffer body", async () => {
+      const ab = new Uint8Array([4, 5, 6]).buffer;
+      const cfg = await send(ab);
+      expect(Buffer.from(cfg.data).equals(Buffer.from([4, 5, 6]))).toBe(true);
+      check(cfg, "POST", url, Buffer.from(cfg.data));
+    });
+
+    it("signs a string body", async () => {
+      const cfg = await send("h\u00e9llo");
+      expect(Buffer.from(cfg.data).toString("utf8")).toBe("h\u00e9llo");
+      check(cfg, "POST", url, Buffer.from(cfg.data));
+    });
+
+    it("signs a URLSearchParams body", async () => {
+      const cfg = await send(new URLSearchParams({ q: "a b" }));
+      expect(Buffer.from(cfg.data).toString("utf8")).toBe("q=a+b");
+      check(cfg, "POST", url, Buffer.from(cfg.data));
+    });
+
+    it("treats empty, null and undefined bodies as no body", async () => {
+      for (const data of ["", null, undefined]) {
+        const cfg = await send(data);
+        expect(parse(cfg.headers.Authorization).signature).toBe(
+          expectedSignature({
+            method: "POST",
+            url,
+            ...parseTimes(cfg),
+            body: Buffer.alloc(0),
+          })
+        );
+      }
+    });
+
+    it("sets a JSON Content-Type for an object when none is set", async () => {
+      const cfg = await send({ a: 1 }, true);
+      expect(String(cfg.headers["Content-Type"])).toBe("application/json");
+      expect(cfg.data).toBe('{"a":1}');
+      check(cfg, "POST", url, Buffer.from(cfg.data));
+    });
+
+    it("rejects a stream body, which cannot be hashed up front", async () => {
+      const { client } = makeClient();
+      const stream = new Readable({ read() {} });
+      await expect(client._http.post("api/x", stream)).rejects.toThrow(
+        "Unsupported request body type"
+      );
+    });
+  });
 });
+
+function parseTimes(cfg: any) {
+  const p = parse(cfg.headers.Authorization);
+  return { timestamp: p.timestamp, nonce: p.nonce };
+}

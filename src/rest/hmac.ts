@@ -39,7 +39,11 @@ export function finalizeBody(config: InternalAxiosRequestConfig): Buffer {
   }
 
   if (Buffer.isBuffer(data) || data instanceof Uint8Array) {
-    return Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+    // Assign a Buffer view back: axios would otherwise send a bare
+    // Uint8Array's whole underlying ArrayBuffer, ignoring its offset.
+    const body = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+    config.data = body;
+    return body;
   }
   if (data instanceof ArrayBuffer) {
     const body = Buffer.from(data);
@@ -89,10 +93,10 @@ export function buildHmacHeader(
   secretKey: string,
   method: string,
   absoluteUrl: string,
-  body: Buffer
+  body: Buffer,
+  nonce: string,
+  timestamp: number
 ): string {
-  const nonce = crypto.randomUUID();
-  const timestamp = Math.floor(Date.now() / 1000);
   const requestUri = dotNetUrlEncode(absoluteUrl.toLowerCase());
   const bodyHash = body.length
     ? crypto.createHash("md5").update(body).digest("base64")
