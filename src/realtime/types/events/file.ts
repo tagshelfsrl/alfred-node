@@ -1,162 +1,234 @@
 import { CompanyInfo, Timestamps, EventProperties } from "./base";
 import { AlfredEvent } from "../../../enums";
 
+/** Fields every file event carries. */
+type FileBase = EventProperties & CompanyInfo;
+
+/** The job the file belongs to, when it belongs to one. */
+type FileJob = {
+  jobId?: string | null;
+};
+
+/** The file's blob. */
+type FileBlob = {
+  blobName: string;
+  blobUrl: string;
+  /** @deprecated Misspelling of `blobUrl`; never delivered. Use `blobUrl`. */
+  bloUrl?: string;
+};
+
+/** The file's name, with and without its extension. */
+type FileNames = {
+  fileName: string;
+  fileNameWithoutExtension: string;
+};
+
+/** The file's document type (tag). `null` while the file has none. */
+type FileTag = {
+  tagId: string | null;
+  tagName: string | null;
+};
+
 // File events
-type FileStatusUpdateEvent = CompanyInfo &
-  Timestamps & {
-    eventName: AlfredEvent.FileStatusUpdate;
-    blobName: string;
-    blobUrl: string;
+export type FileCreateEvent = FileBase &
+  Timestamps &
+  FileJob &
+  FileBlob &
+  FileNames & {
+    eventName: AlfredEvent.FileCreate;
     fileId: string;
-    tagId: string;
-    tagName: string;
+  };
+
+export type FileStatusUpdateEvent = FileBase &
+  Timestamps &
+  FileJob &
+  FileBlob &
+  FileTag & {
+    eventName: AlfredEvent.FileStatusUpdate;
+    fileId: string;
     manualClassification: boolean;
     classificationScore: number;
+    classificationStatus: string;
     fileStatus: string;
   };
 
-type FileMoveEvent = CompanyInfo &
-  Timestamps & {
+export type FileMoveEvent = FileBase &
+  Timestamps &
+  FileJob &
+  FileBlob &
+  FileNames & {
     eventName: AlfredEvent.FileMove;
-    blobName: string;
-    blobUrl: string;
     fileId: string;
-    fileName: string;
-    fileNameWithoutExtension: string;
     previousFileDirectory: string;
     newFileDirectory: string;
   };
 
-type FileDoneEvent = CompanyInfo &
-  Timestamps & {
+export type FileDoneEvent = FileBase &
+  Timestamps &
+  FileJob &
+  FileBlob &
+  FileTag & {
     eventName: AlfredEvent.FileDone;
-    blobName: string;
-    blobUrl: string;
     fileId: string;
-    tagId: string;
-    tagName: string;
     fileStatus: string;
   };
 
-type FileAddToJobEvent = CompanyInfo &
-  Timestamps & {
-    eventName: AlfredEvent.FileAddToJob;
-    fileId: string;
-    jobId: string;
-  };
-
-type FileCategoryCreateEvent = CompanyInfo &
-  Timestamps & {
-    eventName: AlfredEvent.FileCategoryCreate;
-    fileLogId: string;
-    description: any;
-    confidence: number;
-  };
-
-type FileCategoryDeleteEvent = CompanyInfo &
-  Timestamps & {
-    eventName: AlfredEvent.FileCategoryDelete;
-    fileLogId: string;
-    description: any;
-    confidence: number;
-  };
-
-type FileChangeTagEvent = CompanyInfo & {
-  eventName: AlfredEvent.FileChangeTag;
+/** A file linked to a job. This event carries no `creationDate` or `updateDate`. */
+export type FileAddToJobEvent = FileBase & {
+  eventName: AlfredEvent.FileAddToJob | AlfredEvent.FileAddedToJob;
   fileId: string;
-  previousTagId: string;
-  previousTagName: any;
-  proposedTagId: string;
-  classificationScore: number;
-  newTagId: string;
-  newTagName: string;
+  jobId: string;
 };
 
-type FileExtractedDataCreateEvent = CompanyInfo &
-  Timestamps & {
+/** A file linked to a job. */
+export type FileAddedToJobEvent = FileAddToJobEvent;
+
+export type FileCategoryCreateEvent = FileBase &
+  Timestamps &
+  FileJob & {
+    eventName: AlfredEvent.FileCategoryCreate;
+    fileLogId: string;
+    description: string;
+    confidence: number;
+  };
+
+export type FileCategoryDeleteEvent = FileBase &
+  Timestamps &
+  FileJob & {
+    eventName: AlfredEvent.FileCategoryDelete;
+    fileLogId: string;
+    description: string;
+    confidence: number;
+  };
+
+/** A file's document type changed. This event carries no `creationDate` or `updateDate`. */
+export type FileChangeTagEvent = FileBase &
+  FileJob & {
+    eventName: AlfredEvent.FileChangeTag;
+    fileId: string;
+    previousTagId: string;
+    previousTagName: string;
+    proposedTagId: string;
+    classificationScore: number;
+    newTagId: string;
+    newTagName: string;
+  };
+
+export type FileExtractedDataCreateEvent = FileBase &
+  Timestamps &
+  FileJob & {
     eventName: AlfredEvent.FileExtractedDataCreate;
     fileLogId: string;
-    content: any;
+    /** The extracted content, as a string (often JSON). */
+    content: string;
     provider: string;
   };
 
-type FileExtractedDataDeleteEvent = CompanyInfo &
-  Timestamps & {
+export type FileExtractedDataDeleteEvent = FileBase &
+  Timestamps &
+  FileJob & {
     eventName: AlfredEvent.FileExtractedDataDelete;
     fileLogId: string;
-    content: any;
+    /** The extracted content, as a string (often JSON). */
+    content: string;
     provider: string;
   };
 
-type FileFailedEvent = CompanyInfo &
-  Timestamps & {
+export type FileFailedEvent = FileBase &
+  Timestamps &
+  FileJob &
+  FileBlob &
+  FileTag & {
     eventName: AlfredEvent.FileFailed;
     fileId: string;
-    blobName: string;
-    bloUrl: string;
-    tagId: string;
-    tagName: string;
     classificationScore: number;
-    classificationStatus: any;
-    fileStatus: any;
+    classificationStatus: string;
+    fileStatus: string;
+    errorMessages?: string[];
   };
 
-type FileMoveToPendingEvent = CompanyInfo &
-  Timestamps & {
+export type FileMoveToPendingEvent = FileBase &
+  Timestamps &
+  FileJob &
+  FileBlob &
+  FileNames & {
     eventName: AlfredEvent.FileMoveToPending;
     fileId: string;
-    fileName: string;
-    fileNameWithoutExtension: string;
-    blobName: string;
-    bloUrl: string;
   };
 
-type FileMoveToRecycleBinEvent = CompanyInfo &
-  Timestamps & {
+export type FileMoveToRecycleBinEvent = FileBase &
+  Timestamps &
+  FileJob &
+  FileBlob &
+  FileNames & {
     eventName: AlfredEvent.FileMoveToRecycleBin;
     fileId: string;
-    fileName: string;
-    fileNameWithoutExtension: string;
-    blobName: string;
-    bloUrl: string;
   };
 
-type FilePropertyCreateEvent = CompanyInfo &
-  Timestamps & {
+export type FileMoveToDecomposedEvent = FileBase &
+  Timestamps &
+  FileJob &
+  FileBlob &
+  FileNames & {
+    eventName: AlfredEvent.FileMoveToDecomposed;
+    fileId: string;
+  };
+
+/** A file split into its documents. This event carries no `jobId`. */
+export type FileDecomposedEvent = FileBase &
+  Timestamps &
+  FileBlob &
+  FileNames & {
+    eventName: AlfredEvent.FileDecomposed;
+    fileId: string;
+  };
+
+export type FilePropertyCreateEvent = FileBase &
+  Timestamps &
+  FileJob & {
     eventName: AlfredEvent.FilePropertyCreate;
     fileLogId: string;
     name: string;
-    value: any;
+    value: string;
   };
 
-type FilePropertyDeleteEvent = CompanyInfo &
-  Timestamps & {
+export type FilePropertyDeleteEvent = FileBase &
+  Timestamps &
+  FileJob & {
     eventName: AlfredEvent.FilePropertyDelete;
     fileLogId: string;
     name: string;
-    value: any;
+    value: string;
   };
 
-type FileRemoveTagEvent = CompanyInfo & {
-  eventName: AlfredEvent.FileRemoveTag;
-  fileId: string;
-  tagBeingRemovedId: string;
-  tagBeingRemovedName: string;
-  classificationScore: number;
-};
+/**
+ * A document type removed from a file. Alfred before 1.131.0 sends it with the
+ * `eventName` `alfred_event_file_change_tag`; from 1.131.0 it is
+ * `alfred_event_file_remove_tag`. The SDK delivers both to subscribers of
+ * {@link AlfredEvent.FileRemoveTag} and leaves `eventName` as sent. This event
+ * carries no `creationDate` or `updateDate`.
+ */
+export type FileRemoveTagEvent = FileBase &
+  FileJob & {
+    eventName: AlfredEvent.FileRemoveTag | AlfredEvent.FileChangeTag;
+    fileId: string;
+    tagBeingRemovedId: string;
+    tagBeingRemovedName: string;
+    classificationScore: number;
+  };
 
-type FileUpdateEvent = CompanyInfo &
-  Timestamps & {
+export type FileUpdateEvent = FileBase &
+  Timestamps &
+  FileJob &
+  FileBlob &
+  FileNames & {
     eventName: AlfredEvent.FileUpdate;
     fileId: string;
     fileLogId: string;
-    fileName: string;
-    fileNameWithoutExtension: string;
-    blobName: string;
-    blobUrl: string;
   };
 
-type FileEventType =
+export type FileEventType =
+  | FileCreateEvent
   | FileStatusUpdateEvent
   | FileMoveEvent
   | FileDoneEvent
@@ -166,6 +238,8 @@ type FileEventType =
   | FilePropertyCreateEvent
   | FileMoveToRecycleBinEvent
   | FileMoveToPendingEvent
+  | FileMoveToDecomposedEvent
+  | FileDecomposedEvent
   | FileFailedEvent
   | FileExtractedDataDeleteEvent
   | FileExtractedDataCreateEvent
@@ -174,4 +248,4 @@ type FileEventType =
   | FileAddToJobEvent
   | FileCategoryCreateEvent;
 
-export type FileEvent = EventProperties & FileEventType;
+export type FileEvent = FileEventType;
