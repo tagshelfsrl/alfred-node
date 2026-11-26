@@ -3,12 +3,14 @@ import { AxiosError, InternalAxiosRequestConfig, isAxiosError } from "axios";
 import {
   AlfredError,
   ConfigurationError,
-  MAX_RETRY_AFTER_SECONDS,
   RequestError,
   TimeoutError,
+} from "../errors";
+import {
+  MAX_RETRY_AFTER_SECONDS,
   createHTTPError,
   parseRetryAfter,
-} from "../errors";
+} from "./error-response";
 
 /**
  * Transport options for {@link AlfredClient}.

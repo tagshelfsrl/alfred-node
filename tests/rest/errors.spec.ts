@@ -14,11 +14,12 @@ import {
   RequestError,
   ServerError,
   TimeoutError,
+} from "../../src/errors";
+import {
   createHTTPError,
   extractErrorMessage,
   parseRetryAfter,
-  stripQuery,
-} from "../../src/errors";
+} from "../../src/rest/error-response";
 
 describe("errors: class hierarchy", () => {
   it("should keep the legacy 4-argument HTTPError constructor working", () => {
@@ -254,10 +255,14 @@ describe("errors: extractErrorMessage", () => {
 
 describe("errors: helpers and edge cases", () => {
   it("should strip query strings and fragments, and pass through a missing url", () => {
-    expect(stripQuery("api/a?b=1")).toBe("api/a");
-    expect(stripQuery("api/a#top")).toBe("api/a");
-    expect(stripQuery("api/a")).toBe("api/a");
-    expect(stripQuery(undefined)).toBeUndefined();
+    expect(new HTTPError("x", 500, "", "api/a?b=1").url).toBe("api/a");
+    expect(new HTTPError("x", 500, "", "api/a#top").url).toBe("api/a");
+    expect(new RequestError("x", { url: "api/a" }).url).toBe("api/a");
+    // Legacy callers may omit the url
+    expect(
+      new HTTPError("x", 500, "", undefined as unknown as string).url
+    ).toBeUndefined();
+    expect(new RequestError("x").url).toBeUndefined();
   });
 
   it("should keep text that only looks like JSON", () => {
