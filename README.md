@@ -17,7 +17,6 @@
   - [Get Job Information](#get-job-information)
   - [Get File Information](#get-file-information)
   - [Download Files](#download-files)
-  - [Standalone Classification](#standalone-classification)
   - [Retrieve Data Points](#retrieve-data-points)
   - [Real-Time Events](#real-time-events)
     - [Getting started](#getting-started)
@@ -469,67 +468,6 @@ console.log("Downloaded:", downloadResult.originalName);
 console.log("MIME type:", downloadResult.mimetype);
 console.log("Size:", downloadResult.buffer.length, "bytes");
 ```
-
-## Standalone Classification
-
-You can classify a piece of text or a file against criteria you send with the request. No document types or jobs need to exist in your workspace. This needs Alfred 1.130.0 or later, and the feature must be enabled for your workspace (otherwise the API answers 403).
-
-> [!WARNING]
-> Every create call creates and bills one request. There is no idempotency: if you retry a create call, you create (and pay for) a second request. If a create call timed out but you received an id, read that request with `get` instead of creating it again.
-
-Each request needs 2 to 50 criteria (`tags`). Each criterion has a `name`, a `description` and an optional `threshold` between 0 and 1 (default 0, which always picks the best class). Create calls answer right away with a `queued` request; poll `get` every 1 to 2 seconds until its status is `completed` or `failed`. A result usually takes a few seconds.
-
-```typescript
-import { AlfredClient, Classification, ClassificationCriterion } from "@tagshelf/alfred";
-import * as fs from "fs";
-
-// ... Initialization code here ...
-
-const tags: ClassificationCriterion[] = [
-  { name: "Invoice", description: "A bill for goods or services", threshold: 0.5 },
-  { name: "Receipt", description: "Proof of a completed payment" },
-];
-
-// Classify text
-const fromText = await client.classifications.create({
-  tags,
-  text: "Invoice #123. Amount due: 450.00 USD. Payment terms: 30 days.",
-  correlationId: "order-123", // optional
-});
-
-// Classify a file (PDF, PNG, JPEG, WebP, TIFF, GIF or UTF-8 TXT, up to 20 MB).
-// The file type is decided from the extension of originalName.
-const fromFile = await client.classifications.createFromFile({
-  file: {
-    buffer: fs.readFileSync("./document.pdf"),
-    originalName: "document.pdf",
-    mimetype: "application/pdf", // optional
-  },
-  tags,
-});
-
-// Poll until the request finishes, with a deadline
-async function waitForClassification(id: string, timeoutMs = 60000): Promise<Classification> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const current = await client.classifications.get(id);
-    if (current.status === "completed" || current.status === "failed") return current;
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-  }
-  throw new Error(`Classification ${id} did not finish in time.`);
-}
-
-const done = await waitForClassification(fromText.id);
-if (done.status === "completed" && done.result) {
-  console.log("Class:", done.result.class);
-  console.log("Score:", done.result.score);
-  console.log("Predictions:", done.result.predictions);
-} else if (done.error) {
-  console.error(done.error.code, done.error.message);
-}
-```
-
-When no class matches, `result.class` is an empty string and `result.reason` says why: `no_match` (no class scored high enough), `no_text` (no text could be read) or `no_candidates`. `result.belowThreshold` is `true` when the best class scored under its threshold. Only the first 32,000 characters of text are classified (`textTruncated` tells you when text was cut), and only the first 10 pages of a file are used (`input.pagesTruncated`).
 
 ## Retrieve Data Points
 
@@ -1130,7 +1068,64 @@ Retrieves the data points of a file by its ID.
 
 ### Classification Domain Methods
 
-Every create call creates and bills one request. There is no idempotency: a retried create is a second, billed request. If a create call timed out but you received an id, use `get` instead.
+You can classify a piece of text or a file against criteria you send with the request. No document types or jobs need to exist in your workspace. This needs Alfred 1.130.0 or later, and the feature must be enabled for your workspace (otherwise the API answers 403).
+
+> [!WARNING]
+> Every create call creates and bills one request. There is no idempotency: if you retry a create call, you create (and pay for) a second request. If a create call timed out but you received an id, read that request with `get` instead of creating it again.
+
+Each request needs 2 to 50 criteria (`tags`). Each criterion has a `name`, a `description` and an optional `threshold` between 0 and 1 (default 0, which always picks the best class). Create calls answer right away with a `queued` request; poll `get` every 1 to 2 seconds until its status is `completed` or `failed`. A result usually takes a few seconds.
+
+```typescript
+import { AlfredClient, Classification, ClassificationCriterion } from "@tagshelf/alfred";
+import * as fs from "fs";
+
+// ... Initialization code here ...
+
+const tags: ClassificationCriterion[] = [
+  { name: "Invoice", description: "A bill for goods or services", threshold: 0.5 },
+  { name: "Receipt", description: "Proof of a completed payment" },
+];
+
+// Classify text
+const fromText = await client.classifications.create({
+  tags,
+  text: "Invoice #123. Amount due: 450.00 USD. Payment terms: 30 days.",
+  correlationId: "order-123", // optional
+});
+
+// Classify a file (PDF, PNG, JPEG, WebP, TIFF, GIF or UTF-8 TXT, up to 20 MB).
+// The file type is decided from the extension of originalName.
+const fromFile = await client.classifications.createFromFile({
+  file: {
+    buffer: fs.readFileSync("./document.pdf"),
+    originalName: "document.pdf",
+    mimetype: "application/pdf", // optional
+  },
+  tags,
+});
+
+// Poll until the request finishes, with a deadline
+async function waitForClassification(id: string, timeoutMs = 60000): Promise<Classification> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const current = await client.classifications.get(id);
+    if (current.status === "completed" || current.status === "failed") return current;
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+  throw new Error(`Classification ${id} did not finish in time.`);
+}
+
+const done = await waitForClassification(fromText.id);
+if (done.status === "completed" && done.result) {
+  console.log("Class:", done.result.class);
+  console.log("Score:", done.result.score);
+  console.log("Predictions:", done.result.predictions);
+} else if (done.error) {
+  console.error(done.error.code, done.error.message);
+}
+```
+
+When no class matches, `result.class` is an empty string and `result.reason` says why: `no_match` (no class scored high enough), `no_text` (no text could be read) or `no_candidates`. `result.belowThreshold` is `true` when the best class scored under its threshold. Only the first 32,000 characters of text are classified (`textTruncated` tells you when text was cut), and only the first 10 pages of a file are used (`input.pagesTruncated`).
 
 ---
 
