@@ -143,11 +143,13 @@ const config: Configuration = Configuration.default("production");
 // Initialize Alfred client with HMAC
 const client: AlfredClient = new AlfredClient(config, {
     hmac: {
-        key: "your-key",
-        secret: "your-secret",
+        apiKey: "your-api-key",
+        secretKey: "your-secret-key",
     }
 });
 ```
+
+In the Alfred console, the "Secret key" identifies your account to the API and is sent with every request, so it goes in `secretKey`. The "API key" is the key your requests are signed with and is never sent, so it goes in `apiKey`.
 
 For OAuth authentication:
 ```typescript
@@ -715,8 +717,8 @@ type Auth =
   | { apiKey: string }
   | { 
       hmac: {
-        key: string;
-        secret: string;
+        apiKey: string;    // signing key (never sent)
+        secretKey: string; // identifies your account (sent in the header)
       }
     }
   | { 
@@ -726,6 +728,8 @@ type Auth =
       }
     };
 ```
+
+For HMAC, `secretKey` is the console's "Secret key" (it identifies your account) and `apiKey` is the console's "API key" (the key requests are signed with).
 
 ### Domains
 
