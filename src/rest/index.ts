@@ -6,6 +6,7 @@ import { Files } from "./files";
 import { Accounts } from "./accounts";
 import { Sessions } from "./sessions";
 import { DataPoints } from "./datapoints";
+import { Classifications } from "./classifications";
 import { Env } from "../utils/env";
 import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
@@ -35,6 +36,7 @@ export class AlfredClient {
   private _dataPoints?: DataPoints;
   private _jobs?: Jobs;
   private _files?: Files;
+  private _classifications?: Classifications;
 
   constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
     this.auth = auth;
@@ -264,5 +266,11 @@ export class AlfredClient {
   get files(): Files {
     if (!this._files) this._files = new Files(this);
     return this._files;
+  }
+
+  get classifications(): Classifications {
+    if (!this._classifications)
+      this._classifications = new Classifications(this);
+    return this._classifications;
   }
 }
