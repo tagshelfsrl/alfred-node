@@ -250,6 +250,19 @@ describe("rest: jobs", () => {
         hasMore: false,
       });
     });
+
+    it("counts the items when the old shape carries no total", async () => {
+      const { client, jobs } = setup();
+      client._http.get = mockRequest(client, {
+        data: { result: [summaryData(), summaryData()] },
+      });
+
+      const resp = await jobs.getAll({ page: 1, pageSize: 10 });
+
+      expect(resp.items).toHaveLength(2);
+      expect(resp.total).toBe(2);
+      expect(resp.hasMore).toBe(false);
+    });
   });
 
   describe("actions", () => {
