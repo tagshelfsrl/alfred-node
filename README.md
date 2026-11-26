@@ -418,7 +418,7 @@ const { jobId, correlationId } = await client.jobs.create(trackedJob);
 console.log(jobId, correlationId); // correlationId is "" when you sent none
 ```
 
-- `correlationId` is opaque and case-sensitive, is never deduplicated (two jobs can share one), and is trimmed to at most 512 characters. You can later find the job with `client.jobs.getAll({ correlationId })`.
+- `correlationId` is opaque and case-sensitive, is never deduplicated (two jobs can share one), and can be up to 512 characters once surrounding spaces are removed; a longer one is refused with HTTP 400. You can later find the job with `client.jobs.getAll({ correlationId })`.
 - `password` is refused with HTTP 400 where the feature is not enabled.
 - `priority` can be overridden by a workspace-level setting, which wins over the value you send.
 
