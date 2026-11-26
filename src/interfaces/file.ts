@@ -98,7 +98,13 @@ export interface FileDetails {
   confirmedTagId?: string;
   confirmedBy: string;
   manualClassification: boolean;
-  /** Whatever JSON the caller attached (object, array or text), or null. */
+  /**
+   * Whatever JSON the caller attached (object, array or text), or null.
+   *
+   * The client converts the keys of every response to camelCase, and that
+   * includes the keys inside this object: metadata sent as
+   * `{ "invoice_id": 1 }` is read back as `{ invoiceId: 1 }`.
+   */
   metadata: any | null;
   /**
    * The file's metadata merged with its job's metadata, as a JSON string

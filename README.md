@@ -977,7 +977,7 @@ Retrieves detailed information about a file by its ID.
 | `isResultReady` | boolean | An automated result exists and can be read; review may still be pending |
 | `deferredSessionId` | string? | Deferred session the file was uploaded to |
 | `companyId` | string | Workspace ID |
-| `metadata` | any \| null | Whatever JSON the caller attached (object, array or text), or null |
+| `metadata` | any \| null | Whatever JSON the caller attached (object, array or text), or null. The client converts the keys of every response to camelCase, and that includes the keys inside this object: metadata sent as `{ "invoice_id": 1 }` is read back as `{ invoiceId: 1 }` |
 | `effectiveMetadata` | string | The file's metadata merged with its job's, as a JSON string |
 | `jobOrderIndex` | number | Position of the file within its job |
 | `pageCount` | number | Number of pages |
@@ -986,18 +986,6 @@ Retrieves detailed information about a file by its ID.
 | `assignmentDate` | string? | When the file was assigned (ISO 8601 UTC) |
 | `validationDate` | string? | When the file was validated (ISO 8601 UTC) |
 
------------| --- | --- |
-| `id` | string | File ID |
-| `fileName` | string | File name |
-| `fileSize` | number | File size in bytes |
-| `tagName` | string | Applied tag name |
-| `tagId` | string | Applied tag ID |
-| `status` | string | File processing status |
-| `classificationScore` | number | Classification confidence score |
-| `blobUrl` | string | File blob URL |
-| `contentType` | string | File MIME type |
-| `metadata` | string \| null | File metadata |
-| ...and more | | See `File` interface for complete details |
 
 ---
 
