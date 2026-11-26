@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import axios, { AxiosInstance, AxiosRequestConfig, isAxiosError } from "axios";
+import axios, { AxiosInstance, isAxiosError } from "axios";
 
 import { Jobs } from "./jobs";
 import { Files } from "./files";
@@ -10,13 +10,27 @@ import { Env } from "../utils/env";
 import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
 import { ConfigurationError, HTTPError } from "../errors";
+import {
+  ClientOptions,
+  RetryableRequestConfig,
+  TransportSettings,
+  isRetryable,
+  resolveOptions,
+  retryDelay,
+  sleep,
+  timeoutFor,
+  toAlfredError,
+} from "./http";
 import { AuthConfiguration, AuthMethod } from "../config/types";
 
 // eslint-disable-next-line
 const moduleInfo = require("../../package.json");
 
+export * from "../errors";
+export type { ClientOptions } from "./http";
+
 interface TokenResponse {
-  accessToken: string;
+  accessToken?: string;
   tokenType: string;
   expiresIn: number;
   userName: string;
@@ -28,6 +42,10 @@ export class AlfredClient {
   private authMethod!: AuthMethod;
   private accessToken?: string;
   private configuration: ClientConfiguration;
+  /** Waits between retries; replaceable in tests. */
+  _sleep: (ms: number) => Promise<void> = sleep;
+  private transport: TransportSettings;
+  private tokenRequest?: Promise<string>;
 
   // Domains
   private _accounts?: Accounts;
@@ -36,16 +54,34 @@ export class AlfredClient {
   private _jobs?: Jobs;
   private _files?: Files;
 
-  constructor(configuration: ClientConfiguration, auth: AuthConfiguration) {
+  /**
+   * @param configuration - Environment configuration.
+   * @param auth - Credentials: API key, OAuth or HMAC.
+   * @param options - Optional timeout and retry settings.
+   * @throws {ConfigurationError} When no usable credentials are given or an option is invalid.
+   */
+  constructor(
+    configuration: ClientConfiguration,
+    auth: AuthConfiguration,
+    options?: ClientOptions
+  ) {
     this.auth = auth;
     this.configuration = configuration;
+    this.transport = resolveOptions(options);
 
     // Create default axios instance
     this._http = axios.create({
       baseURL: this.configuration.baseURL,
       headers: {
         "Content-Type": "application/json",
+        "User-Agent": `alfred-node/${moduleInfo.version}`,
       },
+    });
+
+    // Apply the default timeout to requests that do not set their own
+    this._http.interceptors.request.use((config) => {
+      config.timeout = timeoutFor(config, this.transport);
+      return config;
     });
 
     // Setup response interceptor
@@ -62,39 +98,7 @@ export class AlfredClient {
         response.data = toCamelCase(response.data);
         return response;
       },
-      (err) => {
-        if (isAxiosError(err) && err.response) {
-          // Store original request
-          const originalReq = err.config as AxiosRequestConfig & {
-            _retry?: boolean;
-          };
-
-          // When using OAuth, retry the request using a new token to handle expirations
-          if (
-            !originalReq._retry &&
-            err.response.status === 401 &&
-            this.authMethod === AuthMethod.OAUTH
-          ) {
-            // Mark request as retried
-            originalReq._retry = true;
-
-            // Clean expired access token
-            this.accessToken = "";
-
-            // Retry the request
-            return this._http(originalReq);
-          }
-
-          // Otherwise, raise an HTTP error
-          throw new HTTPError(
-            err.message,
-            err.response.status,
-            err.response.data,
-            err.config?.url as string
-          );
-        }
-        throw err;
-      }
+      (err) => this.handleResponseError(err)
     );
 
     // Check API key authorization
@@ -140,11 +144,11 @@ export class AlfredClient {
    */
   private authWithOAuth(username: string, password: string) {
     this._http.interceptors.request.use(async (config) => {
-      if (!this.accessToken && config.url !== "/token") {
-        // Get access token
-        const tokenResp = await this.getToken(username, password);
-        this.accessToken = tokenResp.accessToken;
-      }
+      if (config.url === "/token") return config;
+
+      // Get access token, sharing one token request between concurrent calls
+      if (!this.accessToken)
+        this.accessToken = await this.fetchAccessToken(username, password);
 
       config.headers.Authorization = `Bearer ${this.accessToken}`;
       return config;
@@ -223,16 +227,73 @@ export class AlfredClient {
       const params = new URLSearchParams(payload);
 
       const resp = await this._http.post<TokenResponse>("/token", params);
+      if (!resp.data || !resp.data.accessToken)
+        throw new ConfigurationError(
+          "Alfred did not return an access token for the username and password."
+        );
       return resp.data;
     } catch (err) {
-      // Raise credential errors configuration errors
-      if (err instanceof HTTPError && err.status === 400)
+      // Refused credentials are configuration errors; rate limits and server errors are not
+      if (
+        err instanceof HTTPError &&
+        err.status >= 400 &&
+        err.status < 500 &&
+        err.status !== 429
+      )
         throw new ConfigurationError(
-          "Provided auth configuration is not valid."
+          `Alfred refused the username and password: ${err.message}`
         );
 
       throw err;
     }
+  }
+
+  /**
+   * Returns a new access token, reusing the token request already in flight if there is one.
+   */
+  private async fetchAccessToken(username: string, password: string) {
+    if (!this.tokenRequest)
+      this.tokenRequest = this.getToken(username, password).then(
+        (token) => token.accessToken as string
+      );
+
+    const request = this.tokenRequest;
+    try {
+      return await request;
+    } finally {
+      if (this.tokenRequest === request) this.tokenRequest = undefined;
+    }
+  }
+
+  /**
+   * Handles a failed request: renews an expired OAuth token, retries reads that failed for a
+   * temporary reason, and otherwise throws the matching AlfredError.
+   */
+  private async handleResponseError(err: unknown) {
+    if (isAxiosError(err) && err.config) {
+      const config = err.config as RetryableRequestConfig;
+
+      // When using OAuth, retry the request using a new token to handle expirations
+      if (
+        !config._retry &&
+        err.response?.status === 401 &&
+        this.authMethod === AuthMethod.OAUTH
+      ) {
+        config._retry = true;
+        this.accessToken = "";
+        return this._http(config);
+      }
+
+      // Retry reads that failed for a temporary reason
+      const attempt = config._retryCount ?? 0;
+      if (attempt < this.transport.maxRetries && isRetryable(err)) {
+        config._retryCount = attempt + 1;
+        await this._sleep(retryDelay(err, attempt));
+        return this._http(config);
+      }
+    }
+
+    throw toAlfredError(err);
   }
 
   /**
