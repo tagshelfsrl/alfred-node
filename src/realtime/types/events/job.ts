@@ -70,7 +70,8 @@ export type JobInvalidEvent = JobBase & {
 
 export type JobCancelledEvent = JobBase & {
   eventName: AlfredEvent.JobCancelled;
-  cancellationReason?: string;
+  /** Why the job was cancelled; `null` when no reason was recorded. */
+  cancellationReason?: string | null;
   errorMessages?: string[];
 };
 
