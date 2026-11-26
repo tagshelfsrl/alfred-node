@@ -20,10 +20,14 @@
   - [Retrieve Data Points](#retrieve-data-points)
   - [Real-Time Events](#real-time-events)
     - [Getting started](#getting-started)
+    - [Event Payloads](#event-payloads)
     - [File Events](#file-events)
     - [Job Events](#job-events)
     - [Specific Event Listening](#specific-event-listening)
+    - [Events Sent Under Another Name](#events-sent-under-another-name)
     - [Available Event Types](#available-event-types)
+    - [Connection Lifecycle](#connection-lifecycle)
+    - [Errors in Callbacks](#errors-in-callbacks)
     - [Disconnect](#disconnect)
 - [Reference](#reference)
   - [`AlfredClient`](#alfredclient)
@@ -495,17 +499,44 @@ The `alfred-node` library provides a way to listen to events emitted by Alfred I
 
 ### Getting started
 
-To get started, you need to create an instance of the AlfredRealTimeClient class.
+To get started, you need to create an instance of the AlfredRealTimeClient class. The real-time client authenticates with an API key only, and receives the events of the account that key belongs to.
 
 ```typescript
 import { Configuration, AlfredRealTimeClient } from "@tagshelf/alfred";
 
-const config: Configuration = Configuration.default("production");
-const realTimeClient: AlfredRealTimeClient = new AlfredRealTimeClient(
-    config,
-    "your-api-key"
-);
+const config = Configuration.default("production");
+const realTimeClient = new AlfredRealTimeClient(config, "your-api-key");
+
+// Optional: wait until the connection is established (10 seconds by default)
+await realTimeClient.waitUntilConnected();
 ```
+
+The client connects in the background as soon as it is created, so register your callbacks right away, before you create the jobs you want to follow. Events sent while the client is not connected are not replayed. See [Connection Lifecycle](#connection-lifecycle) for reconnections and connection errors.
+
+### Event Payloads
+
+Alfred sends every event on one of three streams: `job_event`, `file_event` and `bulk_task_event`. The kind of event is in the payload's `eventName`, for example `alfred_event_job_finished`. A finished job arrives like this:
+
+```typescript
+{
+    eventName: "alfred_event_job_finished",
+    companyId: "fb9268c7-...",
+    companyName: "TAGSHELF",
+    jobId: "caaeb741-...",
+    correlationId: "invoice-1042",          // only when the job has one
+    creationDate: Date,                     // 2026-11-26T16:34:41.500Z
+    updateDate: Date,                       // 2026-11-26T16:35:06.594Z
+    timestamp: Date,                        // when the event happened
+}
+```
+
+Things to know about the payload:
+
+- Field names are camelCase versions of the fields Alfred sends (`job_id` becomes `jobId`).
+- A field without a value is left out of the payload. For example `correlationId` is only there when the job has one, `metadata` only when the job has metadata, and `companyName` can be missing from `alfred_event_job_create`. Check that a field is present before you read it. Some fields are sent as `null` instead, such as `tagId` and `tagName` before a file is classified.
+- `creationDate`, `updateDate` and `timestamp` are `Date` objects. Alfred sends these dates in UTC, sometimes without a timezone suffix (`"2026-11-26T16:34:41.94"`); the SDK always reads them as UTC, whatever the timezone of your machine. A date that is missing or `null` is left as it is.
+- `timestamp` is the UTC time the event happened. Alfred before 1.131.0 does not set it: it arrives as a date in year 1 (`0001-01-01T00:00:00.000Z`), so use `updateDate` there. `creationDate` and `updateDate` are those of the job or file the event is about.
+- Only the event itself is delivered. The envelope that webhook deliveries carry (`event_id`, `event_type`, `event_time`) is not sent to the real-time client, so `eventId` and `eventTime` are never present.
 
 ### File Events
 
@@ -518,29 +549,29 @@ import { FileEvent, AlfredEvent } from "@tagshelf/alfred";
 realTimeClient.onFileEvent((event: FileEvent) => {
     console.log("File event received:", event.eventName);
     console.log("Company ID:", event.companyId);
-    
+
     // Type-safe event handling based on event name
     switch (event.eventName) {
         case AlfredEvent.FileDone:
             console.log("File processing completed!");
             console.log("File ID:", event.fileId);
-            console.log("Tag Name:", event.tagName);
+            console.log("Tag Name:", event.tagName); // null when the file has no document type
             console.log("File Status:", event.fileStatus);
             break;
-            
+
         case AlfredEvent.FileStatusUpdate:
             console.log("File status updated");
             console.log("File ID:", event.fileId);
             console.log("Classification Score:", event.classificationScore);
             console.log("New Status:", event.fileStatus);
             break;
-            
+
         case AlfredEvent.FileFailed:
             console.log("File processing failed");
             console.log("File ID:", event.fileId);
-            console.log("Tag Name:", event.tagName);
+            console.log("Errors:", event.errorMessages ?? []);
             break;
-            
+
         case AlfredEvent.FileMove:
             console.log("File moved");
             console.log("File ID:", event.fileId);
@@ -562,113 +593,152 @@ import { JobEvent, AlfredEvent } from "@tagshelf/alfred";
 realTimeClient.onJobEvent((event: JobEvent) => {
     console.log("Job event received:", event.eventName);
     console.log("Job ID:", event.jobId);
-    
+
     // Type-safe event handling based on event name
     switch (event.eventName) {
         case AlfredEvent.JobCreate:
             console.log("Job created!");
             console.log("File Count:", event.fileCount);
             console.log("User:", event.userName);
-            console.log("Metadata:", event.metadata);
+            console.log("Metadata:", event.metadata ?? "none");
             break;
-            
+
         case AlfredEvent.JobStart:
             console.log("Job processing started");
-            console.log("Job ID:", event.jobId);
             break;
-            
+
         case AlfredEvent.JobStageUpdate:
             console.log("Job stage updated");
-            console.log("Job ID:", event.jobId);
             console.log("New Stage:", event.stage);
             break;
-            
+
         case AlfredEvent.JobFinished:
             console.log("Job completed successfully!");
-            console.log("Job ID:", event.jobId);
             break;
-            
+
         case AlfredEvent.JobFailed:
             console.log("Job failed");
-            console.log("Job ID:", event.jobId);
             console.log("Retries:", event.retries);
             console.log("Exceeded Retries:", event.exceededRetries);
             break;
-            
-        case AlfredEvent.JobRetry:
-            console.log("Job retrying");
-            console.log("Job ID:", event.jobId);
-            console.log("Retry Count:", event.retries);
-            break;
-            
+
         case AlfredEvent.JobInvalid:
             console.log("Job is invalid");
-            console.log("Job ID:", event.jobId);
-            console.log("Retries:", event.retries);
-            console.log("Exceeded Retries:", event.exceededRetries);
             console.log("Has Broken Input Sources:", event.hasBrokenInputSources);
             break;
-            
+
+        case AlfredEvent.JobCancelled:
+            console.log("Job cancelled:", event.cancellationReason);
+            break;
+
+        case AlfredEvent.JobExpired:
+            console.log("Job expired after", event.expirationDays, "days");
+            break;
+
+        // Alfred before 1.131.0 sends "exceeded retries" as JobRetry
+        case AlfredEvent.JobRetry:
         case AlfredEvent.JobExceededRetries:
             console.log("Job exceeded retry limit");
-            console.log("Job ID:", event.jobId);
             console.log("Retries:", event.retries);
             break;
     }
 });
 ```
 
+A stream callback receives the payload with the `eventName` Alfred sent, so write a stream callback for both names of the two events in [Events Sent Under Another Name](#events-sent-under-another-name). Subscriptions to a single event (below) handle both for you.
+
 ### Specific Event Listening
 
 You can also listen to specific events using the `on()` method. This is useful when you want to monitor a particular event type or when new events are introduced that have not yet received dedicated methods in the library.
 
 ```typescript
-import { AlfredEvent } from "@tagshelf/alfred";
+import {
+    AlfredEvent,
+    FileDoneEvent,
+    FileExtractedDataCreateEvent,
+    JobFinishedEvent,
+} from "@tagshelf/alfred";
 
 // Listen to a specific job event
-realTimeClient.on<JobEvent>(AlfredEvent.JobFinished, (event) => {
+realTimeClient.on<JobFinishedEvent>(AlfredEvent.JobFinished, (event) => {
     console.log("Job finished:", event.jobId);
 });
 
 // Listen to a specific file event
-realTimeClient.on<FileEvent>(AlfredEvent.FileDone, (event) => {
+realTimeClient.on<FileDoneEvent>(AlfredEvent.FileDone, (event) => {
     console.log("File done:", event.fileId);
     console.log("Tag applied:", event.tagName);
 });
 
 // Listen to file extraction data events
-realTimeClient.on(AlfredEvent.FileExtractedDataCreate, (event: any) => {
-    console.log("Data extracted from file:", event.fileLogId);
-    console.log("Extracted content:", event.content);
-    console.log("Provider:", event.provider);
-});
+realTimeClient.on<FileExtractedDataCreateEvent>(
+    AlfredEvent.FileExtractedDataCreate,
+    (event) => {
+        console.log("Data extracted from file:", event.fileLogId);
+        console.log("Extracted content:", event.content);
+        console.log("Provider:", event.provider);
+    }
+);
 ```
+
+How it works: the real-time server has no per-event subscription. It sends every event of a stream to every client of the account, and the SDK calls your callback only for payloads whose `eventName` matches the name you registered. Every event still travels over the connection; the filtering happens in your process.
+
+Rules:
+
+- Registering is additive: you can register several callbacks for the same name, and all of them are called, in the order you registered them.
+- For each event, the stream callbacks (`onJobEvent`, `onFileEvent`, `onBulkTaskEvent`) are called first, then the callbacks registered with `on()` for that event. A callback registered under several matching names is called once per event.
+- `on()` also accepts the stream names `"job_event"`, `"file_event"` and `"bulk_task_event"`, and event names as plain strings (`"alfred_event_job_finished"`).
+- `off(eventName, callback)` removes one callback; `off(eventName)` removes every callback registered for that name. Stream callbacks are registered under the stream names, so `off("job_event", callback)` removes a callback passed to `onJobEvent`.
+
+```typescript
+const onFinished = (event: JobFinishedEvent) => console.log("Finished:", event.jobId);
+
+realTimeClient.on(AlfredEvent.JobFinished, onFinished);
+// ...
+realTimeClient.off(AlfredEvent.JobFinished, onFinished);
+```
+
+### Events Sent Under Another Name
+
+Alfred before 1.131.0 sends two events under the name of another event. The SDK recognises them, so a subscription to either name works with every version of Alfred:
+
+| Subscribe to | Alfred before 1.131.0 sends | Alfred 1.131.0 and later sends |
+| --- | --- | --- |
+| `AlfredEvent.JobExceededRetries` | `alfred_event_job_retry` with `exceededRetries: true` | `alfred_event_job_exceeded_retries` |
+| `AlfredEvent.FileRemoveTag` | `alfred_event_file_change_tag` with `tagBeingRemovedId` (and no `newTagId`) | `alfred_event_file_remove_tag` |
+
+Each payload is delivered once to each callback. The payload keeps the `eventName` Alfred sent, so on Alfred before 1.131.0 a `JobExceededRetries` callback sees `eventName: "alfred_event_job_retry"`. Callbacks registered for `AlfredEvent.JobRetry` or `AlfredEvent.FileChangeTag` also receive those payloads, because that is their name. `AlfredEvent.JobRetry` is deprecated: before 1.131.0 Alfred sent it only for jobs that used up their retries, and from 1.131.0 it is not sent at all.
 
 ### Available Event Types
 
 The library supports the following event types through the `AlfredEvent` enum:
 
-**Job Events:**
+**Job Events** (stream `job_event`, callback `onJobEvent`):
 - `AlfredEvent.JobCreate` - Job is created
 - `AlfredEvent.JobStart` - Job processing starts
 - `AlfredEvent.JobStageUpdate` - Job stage changes
 - `AlfredEvent.JobFinished` - Job completes successfully
 - `AlfredEvent.JobFailed` - Job fails
-- `AlfredEvent.JobRetry` - Job is retrying
-- `AlfredEvent.JobExceededRetries` - Job exceeded retry limit
 - `AlfredEvent.JobInvalid` - Job is invalid
+- `AlfredEvent.JobCancelled` - Job is cancelled
+- `AlfredEvent.JobExpired` - Job expires before it finishes
+- `AlfredEvent.JobExceededRetries` - Job exceeded retry limit (see [Events Sent Under Another Name](#events-sent-under-another-name))
+- `AlfredEvent.JobRetry` - Deprecated; not sent from Alfred 1.131.0
 
-**File Events:**
+**File Events** (stream `file_event`, callback `onFileEvent`):
+- `AlfredEvent.FileCreate` - File is created
 - `AlfredEvent.FileStatusUpdate` - File status changes
 - `AlfredEvent.FileDone` - File processing complete
 - `AlfredEvent.FileFailed` - File processing failed
 - `AlfredEvent.FileMove` - File moved to different location
 - `AlfredEvent.FileUpdate` - File updated
 - `AlfredEvent.FileChangeTag` - File tag changed
-- `AlfredEvent.FileRemoveTag` - Tag removed from file
-- `AlfredEvent.FileAddToJob` - File added to job
+- `AlfredEvent.FileRemoveTag` - Tag removed from file (see [Events Sent Under Another Name](#events-sent-under-another-name))
+- `AlfredEvent.FileAddedToJob` - File added to job (`alfred_event_file_added_to_job`; `AlfredEvent.FileAddToJob` is the same name)
 - `AlfredEvent.FileMoveToPending` - File moved to pending
 - `AlfredEvent.FileMoveToRecycleBin` - File moved to recycle bin
+- `AlfredEvent.FileDecomposed` - File split into its documents
+- `AlfredEvent.FileMoveToDecomposed` - File that was split moved aside
 - `AlfredEvent.FilePropertyCreate` - File property created
 - `AlfredEvent.FilePropertyDelete` - File property deleted
 - `AlfredEvent.FileExtractedDataCreate` - Data extracted from file
@@ -676,9 +746,66 @@ The library supports the following event types through the `AlfredEvent` enum:
 - `AlfredEvent.FileCategoryCreate` - File category created
 - `AlfredEvent.FileCategoryDelete` - File category deleted
 
+**Bulk Task Events** (stream `bulk_task_event`, callback `onBulkTaskEvent`):
+- `AlfredEvent.BulkTaskCreate` - Bulk task is created
+- `AlfredEvent.BulkTaskUpdate` - Bulk task is updated
+- `AlfredEvent.BulkTaskStart` - Bulk task starts
+- `AlfredEvent.BulkTaskClosed` - Bulk task is closed
+
+Bulk task payloads are typed loosely (`BulkTaskEvent`): check that a field is present before you read it.
+
+### Connection Lifecycle
+
+The client connects in the background and reconnects by itself when the connection drops or a connection attempt fails, for example on a network error. A connection error never throws and never closes the client. The only exception is a connection the server refuses, for example because the API key is wrong: then no further attempt is made.
+
+| Member | What it does |
+| --- | --- |
+| `connected` | `true` while the client is connected. |
+| `waitUntilConnected(timeoutMs = 10000)` | Resolves when the client is connected (at once if it already is). Rejects when `timeoutMs` passes first, when the server refuses the connection, or when you call `disconnect()`. |
+| `onConnect(callback)` | Called each time the connection is established, including after a reconnection. |
+| `onDisconnect(callback)` | Called with the reason (for example `"transport close"`) each time the connection closes. |
+| `onConnectError(callback)` | Called with an `Error` for each failed connection attempt. |
+| `onReconnectAttempt(callback)` | Called with the attempt number before each reconnection attempt. |
+| `onReconnect(callback)` | Called with the number of attempts it took when a reconnection succeeds. |
+
+```typescript
+realTimeClient.onConnect(() => console.log("Connected"));
+realTimeClient.onDisconnect((reason) => console.log("Disconnected:", reason));
+realTimeClient.onConnectError((err) => console.warn("Connection attempt failed:", err.message));
+realTimeClient.onReconnectAttempt((attempt) => console.log("Reconnecting, attempt", attempt));
+realTimeClient.onReconnect((attempts) => console.log("Reconnected after", attempts, "attempts"));
+
+try {
+    await realTimeClient.waitUntilConnected(15000);
+    console.log("Listening for events");
+} catch (err) {
+    // Timed out, or the server refused the connection (check the API key)
+    console.error("Could not connect:", (err as Error).message);
+    realTimeClient.disconnect();
+}
+```
+
+The API key is sent in the connection URL, so the SDK removes it (as `[redacted]`) from every error it hands to you. When a connection is refused and you have neither an `onConnectError` callback nor a pending `waitUntilConnected`, the SDK writes the error with `console.error`. Because events sent while the client is disconnected are not replayed, re-check the state of the jobs you follow in `onReconnect` (with `client.jobs.get()`).
+
+### Errors in Callbacks
+
+Your callbacks can be `async`. If a callback throws or its promise rejects, the SDK catches the error, so it does not stop the other callbacks of that event and does not become an unhandled rejection. The error is passed to the callbacks registered with `onError()`; without any, it is written with `console.error`.
+
+```typescript
+realTimeClient.onError((err) => {
+    console.error("A real-time callback failed:", err);
+});
+
+realTimeClient.on(AlfredEvent.FileDone, async (event) => {
+    await saveResult(event); // a rejection here is passed to onError
+});
+```
+
+Lifecycle callbacks (`onConnect`, `onDisconnect`, ...) are protected the same way.
+
 ### Disconnect
 
-When you're done listening to events, disconnect the real-time client to close the websocket connection.
+When you're done listening to events, disconnect the real-time client to close the websocket connection. The client does not reconnect after `disconnect()`.
 
 ```typescript
 realTimeClient.disconnect();
