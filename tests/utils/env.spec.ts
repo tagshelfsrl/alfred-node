@@ -42,3 +42,35 @@ describe("utils: env", () => {
     expect(mailingList).toContain("jane@example.com");
   });
 });
+
+describe("utils: env defaults", () => {
+  beforeEach(() => {
+    delete process.env.MISSING_KEY;
+  });
+
+  it("should return the default for a missing or invalid number", () => {
+    expect(Env.castNumericValue("MISSING_KEY")).toBe(0);
+    expect(Env.castNumericValue("MISSING_KEY", 5)).toBe(5);
+    process.env.MISSING_KEY = "abc";
+    expect(Env.castNumericValue("MISSING_KEY", 7)).toBe(7);
+    delete process.env.MISSING_KEY;
+  });
+
+  it("should return the default for a missing string", () => {
+    expect(Env.castStringValue("MISSING_KEY")).toBe("");
+    expect(Env.castStringValue("MISSING_KEY", "fallback")).toBe("fallback");
+  });
+
+  it("should return the default for a missing or unrecognised boolean", () => {
+    expect(Env.castBooleanValue("MISSING_KEY")).toBe(false);
+    expect(Env.castBooleanValue("MISSING_KEY", true)).toBe(true);
+    process.env.MISSING_KEY = "maybe";
+    expect(Env.castBooleanValue("MISSING_KEY", true)).toBe(true);
+    delete process.env.MISSING_KEY;
+  });
+
+  it("should return the default for a missing array", () => {
+    expect(Env.castArrayValue("MISSING_KEY")).toEqual([]);
+    expect(Env.castArrayValue("MISSING_KEY", ["a"])).toEqual(["a"]);
+  });
+});
