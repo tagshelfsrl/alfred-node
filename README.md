@@ -18,6 +18,7 @@
   - [Get File Information](#get-file-information)
   - [Download Files](#download-files)
   - [Retrieve Data Points](#retrieve-data-points)
+  - [Error Handling](#error-handling)
   - [Real-Time Events](#real-time-events)
     - [Getting started](#getting-started)
     - [File Events](#file-events)
@@ -489,6 +490,78 @@ dataPoints.forEach((dataPoint) => {
 });
 ```
 
+## Error Handling
+
+Every error the client throws is an `AlfredError`, so a single `catch` can handle all of them. When Alfred answers with an error status, the client throws an `HTTPError` subclass chosen by the status code, and its `message` is Alfred's own explanation (for example `Job not found.`) rather than a generic text. When Alfred sends no explanation, the message is the status, such as `404 Not Found`.
+
+| Status | Class | Extra fields |
+| --- | --- | --- |
+| 400 | `BadRequestError` | `errors` when Alfred lists several problems |
+| 401 | `AuthenticationError` | |
+| 403 | `PermissionError` | |
+| 404 | `NotFoundError` | |
+| 409 | `ConflictError` | `reason` when Alfred says why it refused |
+| 413 | `PayloadTooLargeError` | `maxBytes`: the largest size Alfred accepts |
+| 429 | `RateLimitError` | `retryAfter`: seconds to wait, when Alfred says so |
+| 500-599 | `ServerError` | `retryAfter`: seconds to wait, when Alfred says so |
+| any other | `HTTPError` | |
+| no answer | `RequestError` | `code`, such as `ECONNRESET` |
+| timed out | `TimeoutError` (a `RequestError`) | `code` |
+
+All the status classes extend `HTTPError`, so existing code that checks `instanceof HTTPError` keeps working. Every `HTTPError` has:
+
+- `message`: Alfred's explanation, or the status when there is none.
+- `status`: the HTTP status code.
+- `data`: the response body as Alfred sent it.
+- `url` and `method`: the request that failed. The query string is removed from `url`.
+- `correlationId`: when present, a short support reference for the error Alfred logged. Quote it when you contact support. It is not the correlation id of a job.
+
+Errors never include request headers, so logging them does not expose your API key or access token.
+
+```typescript
+import {
+  AlfredError,
+  NotFoundError,
+  RateLimitError,
+} from "@tagshelf/alfred";
+
+// ... Initialization code here ...
+
+try {
+  const job = await client.jobs.get(jobId);
+  console.log(job.stage);
+} catch (err) {
+  if (err instanceof NotFoundError) {
+    console.log("No such job:", jobId);
+  } else if (err instanceof RateLimitError) {
+    console.log(`Too many requests, try again in ${err.retryAfter ?? 60} seconds.`);
+  } else if (err instanceof AlfredError) {
+    console.error(err.name, err.message);
+  } else {
+    throw err;
+  }
+}
+```
+
+With OAuth, if Alfred refuses the username and password, the client throws a `ConfigurationError` whose message includes Alfred's reason, for example `Alfred refused the username and password: The user name or password is incorrect.`
+
+### Timeouts and retries
+
+Each request times out after 60 seconds by default. File uploads and downloads have no timeout unless you set one, because large files can take longer.
+
+Reads (`GET` requests) that fail for a temporary reason are tried again up to 2 more times: when there was no answer at all (a network error or a timeout), or when Alfred answered 429, 502, 503 or 504. The client waits as long as Alfred's `Retry-After` header asks (at most 30 seconds), or otherwise 0.5 seconds, then 1 second, then 2 seconds and so on.
+
+Calls that create or change something (uploads, creating sessions and jobs, and any other `POST`, `PUT`, `PATCH` or `DELETE`) are never tried again. If such a call times out or the connection drops, Alfred may already have done the work, so sending it again could create a duplicate. Before you retry one yourself, check whether the first attempt went through.
+
+Change these settings with the third constructor argument:
+
+```typescript
+const client = new AlfredClient(config, { apiKey: "your-api-key" }, {
+    timeout: 30000, // milliseconds; 0 disables the timeout, including for file transfers
+    maxRetries: 0,  // 0 disables retries
+});
+```
+
 ## Real-Time Events
 
 The `alfred-node` library provides a way to listen to events emitted by Alfred IPA in real-time through a websockets implementation. This feature is particularly useful when you need to monitor the progress of a Job, File, or any other event that occurs within the Alfred platform. To see more information visit our [official documentation](https://docs.tagshelf.dev/event-api).
@@ -695,8 +768,14 @@ The AlfredClient class is the main class that provides access to all the Alfred 
 ### Constructor
 
 ```typescript
-new AlfredClient(config: Configuration, auth: Auth);
+new AlfredClient(config: Configuration, auth: Auth, options?: ClientOptions);
 ```
+
+- `config`: the environment configuration (see [Client Configuration](#client-configuration)).
+- `auth`: the credentials (see [Authentication](#authentication)).
+- `options`: optional timeout and retry settings (see [Client Configuration](#client-configuration)).
+
+The constructor throws a `ConfigurationError` when no usable credentials are given or an option is invalid.
 
 ### Client Configuration
 
@@ -705,6 +784,22 @@ The Configuration class provides the configuration for the AlfredClient.
 ```typescript
 Configuration.default(environment: "production"): Configuration;
 ```
+
+The optional `ClientOptions` argument controls how requests are sent:
+
+```typescript
+interface ClientOptions {
+  timeout?: number;    // milliseconds, default 60000; 0 disables it
+  maxRetries?: number; // retries of failed reads, default 2; 0 disables them
+}
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `timeout` | `60000` | How long a request may take, in milliseconds. `0` disables the timeout. When you leave it out, file uploads and downloads have no timeout; when you set it, it applies to every request. |
+| `maxRetries` | `2` | How many times a read (`GET`) is tried again after a network error, a timeout, or an HTTP 429, 502, 503 or 504. `0` disables retries. Calls that create or change something are never retried. |
+
+Negative values are rejected with a `ConfigurationError`. Every request sends a `User-Agent: alfred-node/<version>` header. See [Error Handling](#error-handling) for details.
 
 ### Authentication
 
