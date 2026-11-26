@@ -1080,7 +1080,7 @@ Retrieves the account information of the authenticated user or application. The 
 ****Returns****
 - A Promise that resolves to a `WhoAmIResult` with these fields:
   - `requestOriginIpAddress`: the IP address and port the request came from, as seen by the API.
-  - `authenticationType`: how the caller authenticated, such as `ApiKey`, `OAuth` or `HMAC`.
+  - `authenticationType`: how the caller authenticated, `ApiKey`, `Bearer` (OAuth) or `HMAC`.
   - `roles`: the roles granted to the caller, such as `Account Admin` or `Application`.
   - `appId` and `appName`: the id and name of the application (integration). Present for API key calls.
   - `status`: the status of the account, such as `active`.
