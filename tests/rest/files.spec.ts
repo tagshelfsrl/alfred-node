@@ -103,6 +103,26 @@ describe("rest: files", () => {
     expect(form.getBuffer().toString()).toContain("api");
   });
 
+  it("uploadFile should send metadata as JSON with its keys untouched", async () => {
+    client._http.post = mockRequest(client, { data: { file_id: "abc" } });
+
+    await files.uploadFile({
+      sessionId: "s1",
+      metadata: { invoiceId: 1, snake_key: "two" },
+      file: {
+        buffer: Buffer.from("x"),
+        originalName: "a.txt",
+        mimetype: "text/plain",
+      },
+    });
+
+    const form = (client._http.post as jest.Mock).mock.calls[0][1];
+    const body = form.getBuffer().toString();
+    expect(body).toContain('name="metadata"');
+    expect(body).toContain('{"invoiceId":1,"snake_key":"two"}');
+    expect(body).not.toContain('name="channel"');
+  });
+
   describe("upload", () => {
     const post = () => (client._http.post as jest.Mock).mock.calls[0];
 
