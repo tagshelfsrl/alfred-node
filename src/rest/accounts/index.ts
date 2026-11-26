@@ -1,5 +1,5 @@
 import { AlfredClient } from "..";
-import { WhoAmIResult } from "../../interfaces/account";
+import { WhoAmIResult } from "../../interfaces";
 
 export class Accounts {
   constructor(private client: AlfredClient) {}

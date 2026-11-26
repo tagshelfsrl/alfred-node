@@ -1,7 +1,7 @@
 export interface WhoAmIResult {
   /** IP address and port the request came from, as seen by the API. */
   requestOriginIpAddress: string;
-  /** How the caller authenticated, e.g. "ApiKey", "OAuth" or "HMAC". */
+  /** How the caller authenticated: "ApiKey", "Bearer" (OAuth) or "HMAC". */
   authenticationType: string;
   /** Roles granted to the caller, e.g. "Account Admin" or "Application". */
   roles: string[];
