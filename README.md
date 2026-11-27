@@ -1084,6 +1084,8 @@ Retrieves the account information of the authenticated user.
 
 Contributions to improve this library are welcome. Please feel free to fork the repository, make your changes, and submit a pull request for review.
 
+To run the tests, install the dependencies with `npm ci` and run `npm test`. The test run fails if coverage of the code under `src/` drops below 100% for statements, branches, functions or lines, so please add tests for any code you add.
+
 # License
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/tagshelfsrl/dotnet-alfred-api-wrapper/blob/feature/AL-887/LICENSE) file for details.

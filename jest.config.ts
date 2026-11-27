@@ -10,12 +10,11 @@ const config: Config = {
   },
   testTimeout: 10000,
   reporters: ["jest-ci-spec-reporter"],
-  coveragePathIgnorePatterns: [
-    "<rootDir>/src/config/*",
-    "<rootDir>/src/errors.ts",
-    "<rootDir>/src/rest/index.ts",
-    "<rootDir>/tests/mock-utils.ts",
-  ],
+  collectCoverageFrom: ["src/**/*.ts"],
+  coverageThreshold: {
+    global: { statements: 100, branches: 100, functions: 100, lines: 100 },
+  },
+  coveragePathIgnorePatterns: ["<rootDir>/tests/mock-utils.ts"],
 };
 
 export default config;
