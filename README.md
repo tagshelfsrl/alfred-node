@@ -1189,6 +1189,8 @@ console.log(account.companyName, account.roles);
 
 Contributions to improve this library are welcome. Please feel free to fork the repository, make your changes, and submit a pull request for review.
 
+Work happens on short-lived branches cut from `development` and named `feat/...`, `fix/...` or `chore/...`. Pull requests target `development`, and their titles follow the same form (`fix(files): ...`). `master` holds what has been released: `development` is promoted to `master` through a pull request from a short-lived branch, the release is then prepared and published from `master`, and `master` is merged back into `development` the same way. Both branches are protected, so every change needs a reviewed pull request.
+
 To run the tests, install the dependencies with `npm ci` and run `npm test`. The test run fails if coverage of the code under `src/` drops below 100% for statements, branches, functions or lines, so please add tests for any code you add.
 
 # License
