@@ -11,6 +11,7 @@ import { ClientConfiguration } from "../config";
 import { toCamelCase } from "../utils/convert-case";
 import { ConfigurationError, HTTPError } from "../errors";
 import { AuthConfiguration, AuthMethod } from "../config/types";
+import { buildHmacHeader, finalizeBody } from "./hmac";
 
 // eslint-disable-next-line
 const moduleInfo = require("../../package.json");
@@ -155,55 +156,29 @@ export class AlfredClient {
   }
 
   /**
-   * Generates a HMAC-based authentication header for API requests using provided API key and secret key.
-   * @param {string} apiKey - A unique identifier associated with your user.
-   * @param {string} secretKey - A secret key associated with your user.
+   * Signs every request the way the API verifies it. The `Authorization`
+   * header is `amx <secretKey>:<signature>:<nonce>:<timestamp>`.
+   * @param {string} apiKey - The signing key (base64). It is used to compute the
+   * signature and is never sent.
+   * @param {string} secretKey - Identifies your account to the API. It travels
+   * in the `Authorization` header.
    */
   private authWithHmac(apiKey: string, secretKey: string) {
     this._http.interceptors.request.use((config) => {
-      const nonce = crypto.randomUUID();
-      const requestURI = encodeURIComponent(
-        ((config.baseURL as string) + config.url) as string
-      ).toLowerCase();
-      const requestMethod = (config.method as string).toUpperCase();
-      const requestTimestamp = Math.floor(new Date().getTime() / 1000);
-      let requestContent = "";
+      // The URL exactly as axios will request it (base URL, path and query)
+      const url = new URL(this._http.getUri(config)).href;
+      // The bytes exactly as they will be sent
+      const body = finalizeBody(config);
 
-      if (config.data)
-        requestContent = crypto
-          .createHash("md5")
-          .update(JSON.stringify(config.data))
-          .digest("base64");
-
-      // Prepare request signature
-      const signatureRawData =
-        secretKey +
-        requestMethod +
-        requestURI +
-        requestTimestamp +
-        nonce +
-        requestContent;
-
-      const signature = Buffer.from(signatureRawData);
-
-      const secretByteArray = Buffer.from(apiKey, "base64");
-
-      const signatureBase64 = crypto
-        .createHmac("sha256", secretByteArray)
-        .update(signature)
-        .digest("base64");
-
-      const hmacKey =
-        "amx " +
-        secretKey +
-        ":" +
-        signatureBase64 +
-        ":" +
-        nonce +
-        ":" +
-        requestTimestamp;
-
-      config.headers.Authorization = hmacKey;
+      config.headers.Authorization = buildHmacHeader(
+        apiKey,
+        secretKey,
+        config.method as string,
+        url,
+        body,
+        crypto.randomUUID(),
+        Math.floor(Date.now() / 1000)
+      );
 
       return config;
     });
