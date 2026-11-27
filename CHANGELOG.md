@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.9](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.8...v1.1.9) (2026-11-27)
+
+
+### Bug Fixes
+
+* **accounts:** export WhoAmIResult with the other interfaces ([966c343](https://github.com/tagshelfsrl/alfred-node/commit/966c343299450f18b4104d90a10826fc071a588e))
+* **accounts:** return account details from whoAmI instead of the HTTP response ([487b947](https://github.com/tagshelfsrl/alfred-node/commit/487b94770e249a71aabaaa4790f804461efbe089))
+* **accounts:** whoAmI returns the account, not the HTTP response ([0ada7de](https://github.com/tagshelfsrl/alfred-node/commit/0ada7dec509ac966692bee16487cdf9907122636))
+* **auth:** sign HMAC requests the way Alfred checks them ([346bb73](https://github.com/tagshelfsrl/alfred-node/commit/346bb73a7b2e3b9cacea420d96d648493df15bbc))
+* **auth:** sign HMAC requests the way the API verifies them ([69a8e14](https://github.com/tagshelfsrl/alfred-node/commit/69a8e1431b80d2670997a8a6b6bd6d20791c184c))
+* **files:** send the field names the API reads on URL upload and return the job ([1c96f77](https://github.com/tagshelfsrl/alfred-node/commit/1c96f77ecf8cee12c11cfb440a8bbaa8253eeada))
+* **files:** URL uploads send the right fields and return the job ([95f81c4](https://github.com/tagshelfsrl/alfred-node/commit/95f81c47c8107c6f8e49ffcdb2d195aaa20d357c))
+
 ## [1.1.8](https://github.com/tagshelfsrl/alfred-node/compare/v1.1.7...v1.1.8) (2025-10-14)
 
 
