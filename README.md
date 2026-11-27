@@ -1154,15 +1154,32 @@ Retrieves the data points of a file by its ID.
 ***Signature***
 
 ```typescript
-whoAmI(): Promise<any>;
+whoAmI(): Promise<WhoAmIResult>;
 ```
 
 ***Description***
 
-Retrieves the account information of the authenticated user.
+Retrieves the account information of the authenticated user or application. The result is the account itself, so read its fields directly. It does not include the HTTP response, so the API key is never returned.
 
 ****Returns****
-- A Promise that resolves to an object of type `any` with the information of the authenticated user.
+- A Promise that resolves to a `WhoAmIResult` with these fields:
+  - `requestOriginIpAddress`: the IP address and port the request came from, as seen by the API.
+  - `authenticationType`: how the caller authenticated, `ApiKey`, `Bearer` (OAuth) or `HMAC`.
+  - `roles`: the roles granted to the caller, such as `Account Admin` or `Application`.
+  - `appId` and `appName`: the id and name of the application (integration). Present for API key calls.
+  - `status`: the status of the account, such as `active`.
+  - `companyId` and `companyName`: the id and name of the tenant the caller belongs to.
+  - `userId`, `userName`, `name` and `lastName`: the signed-in user's details. They are empty for applications.
+
+****Example****
+
+```typescript
+const account = await client.accounts.whoAmI();
+console.log(account.companyName, account.roles);
+```
+
+> Note: reading `.data` on the result (for example `(await client.accounts.whoAmI()).data`) still works but is deprecated and will be removed in the next major version. Read the fields directly instead.
+
 ---
 # Contributing
 
