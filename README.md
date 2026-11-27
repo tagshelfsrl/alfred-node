@@ -233,6 +233,10 @@ const file2Response = await client.files.uploadFile(file2Payload);
 console.log("File 2 uploaded:", file2Response.fileId);
 ```
 
+Optionally pass `channel` (for example `"api"`) in the payload to record where the file came from.
+
+> **File names:** Alfred stores the file name with everything except letters `A-Z a-z`, digits, `-`, `_` and `.` removed. Spaces and accented letters are dropped, so `"my résumé 1.pdf"` is stored as `"myrsum1.pdf"`. The name you send does not round-trip; use plain names or keep your own reference in `metadata`.
+
 **Step 3: Create Job to Process Files**
 
 Once all files are uploaded, create a job using the session ID. This triggers the processing of all files uploaded to that session.
@@ -281,7 +285,7 @@ const remoteUploadPayload: FileUploadPayload = {
 };
 
 const response = await client.files.upload(remoteUploadPayload);
-console.log("Job created:", response.fileId); // This is actually a job ID
+console.log("Job created:", response.jobId);
 // Alfred will automatically download and process the file
 ```
 
@@ -313,7 +317,7 @@ await client.files.upload(multipleFilesPayload);
 const cloudStoragePayload: FileUploadPayload = {
     source: "my-s3-bucket", // Pre-configured source name in Alfred
     container: "invoices",
-    filename: "2025/january/invoice-001.pdf",
+    fileName: "2025/january/invoice-001.pdf",
     metadata: {
         documentType: "invoice",
         year: "2025",
@@ -322,6 +326,36 @@ const cloudStoragePayload: FileUploadPayload = {
 
 await client.files.upload(cloudStoragePayload);
 ```
+
+**Result, correlation ID, password and priority**
+
+The upload creates a job and returns `{ jobId, correlationId, warnings? }`. `correlationId` is the value you sent (an empty string when none) and `warnings` is present only when the API raised some.
+
+```typescript
+const result = await client.files.upload({
+    url: "https://example.com/protected.pdf",
+    correlationId: "order-4711", // your own identifier, at most 512 characters
+    password: "secret",          // for password-protected files
+    priority: "high",            // "low" | "normal" | "high" | "urgent"
+});
+
+console.log(result.jobId, result.correlationId, result.warnings);
+```
+
+**Decompose a file**
+
+Set `decompose: true` to split the file into its parts. `pageRotation` (in degrees) is only read together with `decompose`, and `parentFilePrefix` is applied with `decompose`.
+
+```typescript
+await client.files.upload({
+    url: "https://example.com/scan.pdf",
+    decompose: true,
+    pageRotation: 90,
+    parentFilePrefix: "scans/2025",
+});
+```
+
+> **Deprecated:** `filename` and `filenames` still work but are deprecated. Use `fileName` and `fileNames`; when both spellings are given, the new one wins. `metadata` is sent exactly as you write it; its keys are never renamed.
 
 For more information about remote sources, see the [Remote Sources API documentation](https://docs.tagshelf.dev/enpoints/file/source).
 
@@ -428,13 +462,13 @@ console.log("Job files:", jobInfo.files);
 You can retrieve detailed information about a file using its ID.
 
 ```typescript
-import { AlfredClient, Configuration, File } from "@tagshelf/alfred";
+import { AlfredClient, Configuration, FileDetails } from "@tagshelf/alfred";
 
 // ... Initialization code here ...
 
 // Get file details by ID
 const fileId = "87654321-4321-4321-4321-210987654321";
-const fileInfo: File = await client.files.get(fileId);
+const fileInfo: FileDetails = await client.files.get(fileId);
 
 console.log("File name:", fileInfo.fileName);
 console.log("File size:", fileInfo.fileSize);
@@ -442,6 +476,8 @@ console.log("Tag name:", fileInfo.tagName);
 console.log("Status:", fileInfo.status);
 console.log("Classification score:", fileInfo.classificationScore);
 ```
+
+`File` is still exported as a deprecated alias of `FileDetails`. See [`get()` Method](#get-method-1) in the reference for every field.
 
 ## Download Files
 
@@ -464,6 +500,8 @@ console.log("Downloaded:", downloadResult.originalName);
 console.log("MIME type:", downloadResult.mimetype);
 console.log("Size:", downloadResult.buffer.length, "bytes");
 ```
+
+`originalName` is read from the `Content-Disposition` header: the `filename*=` form (percent-decoded) is preferred, then a quoted `filename="..."`, then a plain `filename=`. Quotes and anything after a `;` are removed. When the header is missing, `originalName` is an empty string and `mimetype` falls back to `application/octet-stream`.
 
 ## Retrieve Data Points
 
@@ -818,17 +856,16 @@ Uploads a local file to Alfred.
   |-----------| --- | --- |
   | `file`      | File | Object containing the file buffer, original name, and mimetype.|
   | `sessionId` | string | Session ID to link multiple files to a job.|
-  | `metadata`  | any |  JSON object or JSON array of objects containing metadata fields for a given remote file.|
+  | `metadata`  | any |  JSON object or JSON array of objects containing metadata fields for the file.|
+  | `channel`   | string | Optional. Channel the file came through, for example `"api"`.|
 
 ***Returns***
-- A Promise that resolves to an object of type `UploadFileResponse` with the following properties:
+- A Promise that resolves to an object with the following property:
 - | Key       | Type | Description |
   |-----------| --- | --- |
-  | `id`        | string | File ID |
-  | `name`      | string | File name |
-  | `mimetype`  | string | File mimetype |
-  | `size`      | number | File size |
-  | `metadata`  | any | File metadata |
+  | `fileId`    | string | ID of the uploaded file |
+
+Alfred stores the file name with everything except `A-Z a-z 0-9 - _ .` removed, so the stored name can differ from `originalName`.
 
 ---
 
@@ -837,12 +874,12 @@ Uploads a local file to Alfred.
 ***Signature***
 
 ```typescript
-upload(payload: FileUploadPayload): Promise<{ fileId: string }>;
+upload(payload: FileUploadPayload): Promise<FileUploadResult>;
 ```
 
 ***Description***
 
-Uploads a file from a remote source to Alfred.
+Uploads files from URLs or a remote source to Alfred. This creates a job. Field names are sent to the API in the form it reads (`fileName` as `file_name`, and so on).
 
 ***Parameters***- `payload`: An object of type `FileUploadPayload` with the following properties:
 
@@ -850,24 +887,32 @@ Uploads a file from a remote source to Alfred.
 |---------------------| --- | --- |
 | `url`               | string | URL of the file to upload (use url, when you have an URl to single remote file.)|
 | `urls`              | string[] | URLs of the files to upload. (Use urls, when you have URl's for multiple remote files. The current limit for this parameter is **100 elements**.) |
-| `source`            | string | Configured object storage source name. Ideal for referring to files hosted in existing cloud containers. When used, **file_name** and **container** are required. |
-| `container`         | string | Virtual container where the referenced remote file is located. When used, **source** and **file_name** are required.|
-| `filename`          | string | Unique name of the file within an object storage source. When used, **source** and **container** are required.|
-| `filenames`         | string[] | Array of unique names of the files within an object storage source. When used, **source** and **container** are required.|
+| `source`            | string | Configured object storage source name. Ideal for referring to files hosted in existing cloud containers. When used, `fileName` and `container` are required. |
+| `container`         | string | Virtual container where the referenced remote file is located. When used, `source` and `fileName` are required.|
+| `fileName`          | string | Unique name of the file within an object storage source. When used, **source** and **container** are required.|
+| `fileNames`         | string[] | Array of unique names of the files within an object storage source. When used, **source** and **container** are required.|
+| `filename`          | string | **Deprecated**, use `fileName`. |
+| `filenames`         | string[] | **Deprecated**, use `fileNames`. |
 | `merge`             | boolean | Boolean value [true/false] - When set to true, will merge all of the remote files into a single PDF file. All of the remote files MUST be images. </br></br>By default this field is set to **false**. |
 | `metadata`          | any | JSON object or JSON array of objects containing metadata fields for a given remote file. </br></br>When merge field is set to **false**:</br></br>When using the urls field this should be a JSON object array that matches the urls field array length.</br></br>When using the url field the metadata field should be a JSON object.</br></br>When the merge field is set to true: The metadata field should be a JSON object.|
-| `propagateMetadata` | boolean | This parameter enables the specification of a single metadata object to be applied across multiple files from remote URLs or remote sources. When used, `propagate_metadata` ensures that the defined metadata is consistently attached to all the specified files during their upload and processing. This feature is particularly useful for maintaining uniform metadata across a batch of files, streamlining data organization and retrieval. |
-| `parentFilePrefix`  | string | The `parent_file_prefix` parameter is used to specify a virtual folder destination for the uploaded files, diverging from the default 'Inbox' folder. By setting this parameter, users can organize files into specific virtual directories, enhancing file management and accessibility within Alfred's system. |
+| `propagateMetadata` | boolean | Applies a single metadata object to every file from the remote URLs or remote source, so a batch gets uniform metadata. |
+| `parentFilePrefix`  | string | Virtual folder destination for the uploaded files, instead of the default 'Inbox' folder. Applied with `decompose`. |
+| `decompose`         | boolean | Splits the file into its parts. |
+| `pageRotation`      | number | Page rotation in degrees. Only read when `decompose` is set. |
+| `channel`           | string | Channel the files came through, for example `"api"`. |
+| `correlationId`     | string | Your own identifier for the job, at most 512 characters. |
+| `password`          | string | Password for password-protected files. |
+| `priority`          | `"low"` \| `"normal"` \| `"high"` \| `"urgent"` | Processing priority of the job. |
+
+Any other key is sent unchanged. The contents of `metadata` are never renamed.
 
 ***Returns***
-- A Promise that resolves to an object of type `UploadResponse` with the following properties:
+- A Promise that resolves to an object of type `FileUploadResult` with the following properties:
 - | Key       | Type | Description |
   |-----------| --- | --- |
-  | `id`        | string | File ID |
-  | `name`      | string | File name |
-  | `mimetype`  | string | File mimetype |
-  | `size`      | number | File size |
-  | `metadata`  | any | File metadata |
+  | `jobId`         | string | ID of the job created for the files |
+  | `correlationId` | string \| undefined | The correlation ID you sent (empty string when none) |
+  | `warnings`      | string[] \| undefined | Present only when the API raised warnings |
 
 ---
 
@@ -876,7 +921,7 @@ Uploads a file from a remote source to Alfred.
 ***Signature***
 
 ```typescript
-get(id: string): Promise<File>;
+get(id: string): Promise<FileDetails>;
 ```
 
 ***Description***
@@ -887,21 +932,60 @@ Retrieves detailed information about a file by its ID.
 - `id`: The ID of the file to retrieve.
 
 ***Returns***
-- A Promise that resolves to an object of type `File` with the file details including:
+- A Promise that resolves to an object of type `FileDetails` (also exported as the deprecated `File`). Fields marked `?` are left out when they have no value.
 
 | Key       | Type | Description |
 |-----------| --- | --- |
 | `id` | string | File ID |
+| `creationDate` | string | When the file was created (ISO 8601 UTC) |
+| `updateDate` | string | When the file was last updated (ISO 8601 UTC) |
 | `fileName` | string | File name |
+| `fileNameWithoutExtension` | string | File name without its extension |
+| `size` | number | Legacy size field, 0 in practice; use `fileSize` |
 | `fileSize` | number | File size in bytes |
-| `tagName` | string | Applied tag name |
-| `tagId` | string | Applied tag ID |
-| `status` | string | File processing status |
-| `classificationScore` | number | Classification confidence score |
-| `blobUrl` | string | File blob URL |
+| `blobName` | string | Storage name of the file |
+| `blobUrl` | string | Storage URL of the file |
+| `userName` | string | User who uploaded the file |
+| `md5Hash` | string | Base64 of the binary MD5 digest of the content |
 | `contentType` | string | File MIME type |
-| `metadata` | string \| null | File metadata |
-| ...and more | | See `File` interface for complete details |
+| `channel` | string | Channel the file came through |
+| `shouldBeClassified` | boolean | Whether the file is to be classified |
+| `excludeFromClassificationData` | boolean | Whether the file is excluded from classification training data |
+| `classifier` | string | Classifier that handled the file, for example `"zero"` |
+| `description` | string | Description of the file |
+| `classificationScore` | number | Classification confidence score |
+| `status` | string | Processing status, for example `finished` or `failed_extraction` |
+| `inputType` | string | `single_unit`, `primary`, `derived` or `virtual` |
+| `extractionType` | string | `none`, `text`, `multimodal` or `reused` |
+| `isDuplicate` | boolean | The file duplicates another file |
+| `isDataDuplicate` | boolean | The extracted data duplicates another file |
+| `isDuplicateByValues` | boolean | The file duplicates another by field values |
+| `duplicateOriginId` | string? | ID of the original file, when a duplicate |
+| `tagId` | string? | Applied tag ID |
+| `tagName` | string | Applied tag name |
+| `proposedTagId` | string? | Tag ID proposed by the classifier |
+| `proposedTagVariance` | number | Variance of the proposed tag |
+| `classificationScoreAboveDeviation` | boolean | Score is above the tag's deviation threshold |
+| `confirmedTagId` | string? | Tag ID confirmed by a reviewer |
+| `confirmedBy` | string | Who confirmed the tag |
+| `manualClassification` | boolean | The tag was set by a person |
+| `isParent` | boolean | The file was split into children |
+| `parentId` | string? | ID of the parent file |
+| `groupRole` | string | Role in a grouped document: `standalone`, `virtual` or `member` |
+| `groupId` | string? | ID of the group the file belongs to |
+| `isProcessingUnit` | boolean | The file is classified and extracted in its own right: not a split parent and not a page of a grouped document |
+| `isResultReady` | boolean | An automated result exists and can be read; review may still be pending |
+| `deferredSessionId` | string? | Deferred session the file was uploaded to |
+| `companyId` | string | Workspace ID |
+| `metadata` | any \| null | Whatever JSON the caller attached (object, array or text), or null. The client converts the keys of every response to camelCase, and that includes the keys inside this object: metadata sent as `{ "invoice_id": 1 }` is read back as `{ invoiceId: 1 }` |
+| `effectiveMetadata` | string | The file's metadata merged with its job's, as a JSON string |
+| `jobOrderIndex` | number | Position of the file within its job |
+| `pageCount` | number | Number of pages |
+| `pageNumber` | number | Page number within the parent, -1 when not a page |
+| `assignedTo` | string | User the file is assigned to for review |
+| `assignmentDate` | string? | When the file was assigned (ISO 8601 UTC) |
+| `validationDate` | string? | When the file was validated (ISO 8601 UTC) |
+
 
 ---
 
@@ -926,8 +1010,8 @@ Downloads a file from Alfred by its ID.
 | Key       | Type | Description |
 |-----------| --- | --- |
 | `buffer` | Buffer | File content as a Buffer |
-| `originalName` | string | Original file name |
-| `mimetype` | string | File MIME type |
+| `originalName` | string | File name from the `Content-Disposition` header (`filename*=` preferred, quotes removed); empty string when missing |
+| `mimetype` | string | File MIME type; `application/octet-stream` when the header is missing |
 
 ---
 
